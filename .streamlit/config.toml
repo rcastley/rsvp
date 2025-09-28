@@ -1,0 +1,41 @@
+[[theme.fontFaces]]
+family="noto-sans"
+url="app/static/NotoSans-Italic-VariableFont_wdth,wght.ttf"
+style="italic"
+[[theme.fontFaces]]
+family="noto-sans"
+url="app/static/NotoSans-VariableFont_wdth,wght.ttf"
+style="normal"
+weight=400
+[[theme.fontFaces]]
+family="noto-sans"
+url="app/static/NotoSans-VariableFont_wdth,wght.ttf"
+style="bold"
+weight=700
+
+[theme]
+base = "light"
+primaryColor="slateBlue"
+backgroundColor="white"
+secondaryBackgroundColor="lavender"
+codeBackgroundColor="powderBlue"
+baseRadius = "medium"
+showWidgetBorder = true
+baseFontSize = 14
+font="noto-sans"
+
+[theme.sidebar]
+backgroundColor="ghostWhite"
+secondaryBackgroundColor="lavender"
+
+[server]
+enableCORS = false
+enableXsrfProtection = false
+headless = true
+enableStaticServing = true
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"
