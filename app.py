@@ -257,7 +257,7 @@ def rsvp_form_page():
                             st.rerun()
                 
                 # Menu selections
-                menu_col1, menu_col2, menu_col3 = st.columns(3)
+                menu_col1, menu_col2, menu_col3 = st.columns([1.2, 1.8, 1.1])
                 
                 with menu_col1:
                     starter = st.selectbox(
