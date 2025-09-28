@@ -15,7 +15,7 @@ st.set_page_config(
 # Custom HTML/CSS for the banner
 custom_html = """
 <div class="banner">
-    <img src="https://www.useyourlocal.com/imgs/pubs/1200x630/8458_20200529124416166966.jpeg" alt="Banner Image">
+    <img src="https://www.realweddings.co.uk/detail/the-white-hart-ufford/m/v/showcase_hero/91652/459927009_18285199603224087_4291546012477049125_n.jpg" alt="Banner Image">
 </div>
 <style>
     .banner {
