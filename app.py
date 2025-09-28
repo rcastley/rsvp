@@ -188,8 +188,8 @@ def process_submission():
 
 def rsvp_form_page():
     """Main RSVP form page"""
-    st.title("Robert & Charlotte Wedding RSVP")
     st.markdown("---")
+    st.subheader("Robert & Charlotte Wedding RSVP")
     st.write("We're excited to celebrate our special day with you! Please let us know if you'll be joining us.")
     
     # Initialize session state
@@ -218,7 +218,7 @@ def rsvp_form_page():
         return
     
     # RSVP Response
-    st.caption("Will you be attending our wedding?")
+    st.markdown("**Will you be attending our wedding?**")
     attending = st.radio(
         "**Will you be attending our wedding?**",
         ["Yes, I/we will attend", "No, I/we cannot attend"],
@@ -226,18 +226,22 @@ def rsvp_form_page():
     )
     
     # Contact Information
-    st.subheader("Contact Information")
-    contact_name = st.text_input("Primary Contact Name*", key="contact_name")
-    contact_email = st.text_input("Email Address", key="contact_email")
-    contact_phone = st.text_input("Phone Number", key="contact_phone")
+    st.markdown("**Contact Information**")
+    contact_col1, contact_col2, contact_col3 = st.columns([3, 4, 2])
+    with contact_col1:
+        contact_name = st.text_input("Primary Contact Name*", key="contact_name", width=300)
+    with contact_col2:
+        contact_email = st.text_input("Email Address", key="contact_email", width=350)
+    with contact_col3:
+        contact_phone = st.text_input("Phone Number", key="contact_phone", width=200)
     
     if attending == "Yes, I/we will attend":
-        st.subheader("Guest Details & Menu Choices")
+        st.markdown("**Guest Details & Menu Choices**")
         st.write("Please provide details for each guest attending:")
         
         # Display guests
         for i, guest in enumerate(st.session_state.guests):
-            with st.container():
+            with st.container(border=True):
                 st.markdown(f"**Guest {i + 1}**")
                 
                 # Create columns for guest details
@@ -290,16 +294,15 @@ def rsvp_form_page():
                     placeholder="Please list any allergies or dietary requirements",
                     height=60
                 )
-                
-                st.markdown("---")
-        
+
+
         # Add guest button
         if st.button("**Add Another Guest**", icon=":material/add:"):
             add_guest()
             st.rerun()
     
     # Additional comments
-    st.subheader("Additional Comments")
+    st.markdown("**Additional Comments**")
     comments = st.text_area(
         "Any additional comments or special requests:",
         key="comments",
