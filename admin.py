@@ -26,10 +26,13 @@ def admin_login_page():
     """Admin login page"""
     st.title(":material/lock: Admin Login")
     st.write("Please enter the password to access the RSVP admin dashboard.")
-    
-    password = st.text_input("Password:", type="password", key="admin_password")
-    
-    if st.button("Login", type="primary"):
+
+    # Use a form to enable Enter key submission
+    with st.form("admin_login_form"):
+        password = st.text_input("Password:", type="password", key="admin_password_input")
+        submit_button = st.form_submit_button("Login", type="primary")
+
+    if submit_button:
         if password == ADMIN_PASSWORD:
             # Set authentication state
             st.session_state.authenticated = True
@@ -40,7 +43,7 @@ def admin_login_page():
             st.rerun()
         else:
             st.error(":material/cancel: Incorrect password. Please try again.")
-    
+
     st.markdown("---")
     st.info(":material/lightbulb: If you're a guest looking to submit your RSVP, please use the RSVP form instead.")
 
@@ -98,7 +101,7 @@ def admin_summary_page():
                         color: white;
                         margin: 5px 0;
                     ">
-                        <h4>⏰ Time Remaining: {formatted_time}</h4>
+                        <h4>:material/clock: Time Remaining: {formatted_time}</h4>
                     </div>
                     """, unsafe_allow_html=True)
 
