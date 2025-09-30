@@ -38,8 +38,8 @@ def event_info_page():
             
             # Add map if URL provided
             if st.secrets['event'].get('ceremony_venue_map_url'):
-                st.markdown(f"[📍 Open in Maps]({st.secrets['event']['ceremony_venue_map_url']})")
-        
+                st.page_link(st.secrets['event']['ceremony_venue_map_url'], label='Open in Maps', icon=":material/map:")
+
         with ceremony_col2:
             # Ceremony venue image if provided
             if st.secrets['event'].get('ceremony_venue_image'):
@@ -71,8 +71,8 @@ def event_info_page():
         
         # Add map if URL provided
         if st.secrets['event'].get('venue_map_url'):
-            st.markdown(f"[📍 Open in Maps]({st.secrets['event']['venue_map_url']})")
-    
+            st.page_link(st.secrets['event']['venue_map_url'], label='Open in Maps', icon=":material/map:")
+
     with venue_col2:
         # Venue image if provided
         if st.secrets['event'].get('venue_image'):
@@ -106,7 +106,86 @@ def event_info_page():
         st.markdown("")
     
     st.markdown("---")
-    
+
+    # Menu Information
+    if st.secrets.get('menu'):
+        menu_info = st.secrets['menu']
+
+        # Check if there are any detailed menu items to display
+        starters_detailed = menu_info.get('starters_detailed', [])
+        mains_detailed = menu_info.get('mains_detailed', [])
+        desserts_detailed = menu_info.get('desserts_detailed', [])
+
+        # Helper function to check if items exist and are valid
+        def has_valid_items(items):
+            if not items:
+                return False
+            for item in items:
+                if isinstance(item, dict):
+                    if item.get('name', '').strip():
+                        return True
+                elif isinstance(item, str) and item.strip():
+                    return True
+            return False
+
+        has_starters = has_valid_items(starters_detailed)
+        has_mains = has_valid_items(mains_detailed)
+        has_desserts = has_valid_items(desserts_detailed)
+
+        if has_starters or has_mains or has_desserts:
+            st.header(":material/restaurant_menu: Menu")
+
+            # Optional menu description
+            if menu_info.get('menu_description'):
+                st.write(menu_info['menu_description'])
+
+            menu_col1, menu_col2, menu_col3 = st.columns(3)
+
+            if has_starters:
+                with menu_col1:
+                    st.subheader(":material/restaurant: Starters")
+                    for item in starters_detailed:
+                        if isinstance(item, dict):
+                            if item.get('name', '').strip():
+                                st.markdown(f"**{item['name']}**")
+                                if item.get('description'):
+                                    st.caption(item['description'])
+                                st.write("")
+                        elif isinstance(item, str) and item.strip():
+                            st.write(f"• {item}")
+
+            if has_mains:
+                with menu_col2:
+                    st.subheader(":material/dinner_dining: Main Courses")
+                    for item in mains_detailed:
+                        if isinstance(item, dict):
+                            if item.get('name', '').strip():
+                                st.markdown(f"**{item['name']}**")
+                                if item.get('description'):
+                                    st.caption(item['description'])
+                                st.write("")
+                        elif isinstance(item, str) and item.strip():
+                            st.write(f"• {item}")
+
+            if has_desserts:
+                with menu_col3:
+                    st.subheader(":material/cake: Desserts")
+                    for item in desserts_detailed:
+                        if isinstance(item, dict):
+                            if item.get('name', '').strip():
+                                st.markdown(f"**{item['name']}**")
+                                if item.get('description'):
+                                    st.caption(item['description'])
+                                st.write("")
+                        elif isinstance(item, str) and item.strip():
+                            st.write(f"• {item}")
+
+            # Optional menu notes
+            if menu_info.get('menu_notes'):
+                st.info(f":material/info: {menu_info['menu_notes']}")
+
+            st.markdown("---")
+
     # Accommodations
     if st.secrets['event'].get('accommodations'):
         st.header(":material/hotel: Accommodations")
@@ -157,16 +236,16 @@ def event_info_page():
         st.markdown("---")
     
     # Dress Code
-    # dress_code = st.secrets['event'].get('dress_code')
-    # if dress_code:
-    #     st.header(":material/checkroom: Dress Code")
-    #     st.write(dress_code)
+    dress_code = st.secrets['event'].get('dress_code')
+    if dress_code:
+        st.header(":material/checkroom: Dress Code")
+        st.write(dress_code)
         
-    #     dress_code_notes = st.secrets['event'].get('dress_code_notes')
-    #     if dress_code_notes:
-    #         st.info(dress_code_notes)
+        dress_code_notes = st.secrets['event'].get('dress_code_notes')
+        if dress_code_notes:
+            st.info(dress_code_notes)
         
-    #     st.markdown("---")
+        st.markdown("---")
     
     # Gift Registry
     registries = st.secrets['event'].get('registry')
