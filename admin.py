@@ -14,7 +14,6 @@ ADMIN_PASSWORD = st.secrets["admin"]["password"]
 
 def show_login_success():
     """Display a simple login success acknowledgment"""
-    st.balloons()
     st.success(":material/check_circle: Welcome to Admin Dashboard!")
     st.info("You now have access to all RSVP management features.")
     time.sleep(1)
@@ -182,11 +181,17 @@ def admin_menu_page():
     admin_welcome_header()
     
     st.title(":material/restaurant: Menu Planning")
-    
+
     # Load data
     df = load_rsvps()
+
+    # Check if dataframe is empty or missing required columns
+    if df.empty or 'attending' not in df.columns:
+        st.info(":material/inbox: No attending guests yet to display menu planning data.")
+        return
+
     total_guests = len(df[df['attending'] == 'Yes'])
-    
+
     if total_guests > 0:
         attending_df = df[df['attending'] == 'Yes']
         
