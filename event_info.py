@@ -43,14 +43,15 @@ def event_info_page():
         with ceremony_col2:
             # Ceremony venue image if provided
             if st.secrets['event'].get('ceremony_venue_image'):
-                st.image(st.secrets['event']['ceremony_venue_image'], use_container_width=True)
+                st.image(st.secrets['event']['ceremony_venue_image'], width="content")
         
         # Map display if coordinates provided
         if st.secrets['event'].get('ceremony_venue_latitude') and st.secrets['event'].get('ceremony_venue_longitude'):
             st.map(
                 data={'lat': [st.secrets['event']['ceremony_venue_latitude']], 
                       'lon': [st.secrets['event']['ceremony_venue_longitude']]},
-                zoom=14
+                zoom=15,
+                size=20
             )
         
         st.markdown("---")
@@ -75,14 +76,15 @@ def event_info_page():
     with venue_col2:
         # Venue image if provided
         if st.secrets['event'].get('venue_image'):
-            st.image(st.secrets['event']['venue_image'], use_container_width=True)
+            st.image(st.secrets['event']['venue_image'], width="content")
     
     # Map display if coordinates provided
     if st.secrets['event'].get('venue_latitude') and st.secrets['event'].get('venue_longitude'):
         st.map(
             data={'lat': [st.secrets['event']['venue_latitude']], 
                   'lon': [st.secrets['event']['venue_longitude']]},
-            zoom=14
+            zoom=15,
+            size=20
         )
     
     st.markdown("---")

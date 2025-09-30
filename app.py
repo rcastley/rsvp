@@ -20,17 +20,7 @@ st.set_page_config(
     page_icon=st.secrets["wedding"]["page_icon"],
     #layout="wide"
 )
-# Custom HTML/CSS for the banner
-custom_html = f"""
-<div style="
-            padding: 0px;
-            margin: 0;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-    <img src="{st.secrets['wedding']['banner_image']}" alt="Banner Image">
-</div>
-"""
-# Display the custom HTML
-st.components.v1.html(custom_html)
+
 # Menu options
 STARTERS = st.secrets["menu"]["starters"]
 MAINS = st.secrets["menu"]["mains"]
@@ -189,50 +179,54 @@ def process_submission():
 
 def rsvp_form_page():
     """Main RSVP form page"""
-    st.markdown("---")
-    st.subheader(f"{st.secrets['wedding']['wedding_couple']} Wedding RSVP")
-    st.write(st.secrets["ui"]["welcome_message"])
+    col1, col2 = st.columns([2.5, 1])
+    with col1:
+        st.subheader(f"{st.secrets['wedding']['wedding_couple']} Wedding RSVP")
+        st.write(st.secrets["ui"]["welcome_message"])
 
-    # Check deadline status and display countdown/warning
-    deadline = get_deadline_datetime()
-    if deadline:
-        if is_past_deadline():
-            if is_within_grace_period():
-                st.error(":material/schedule: RSVP deadline has passed, but submissions are still being accepted for a limited time.")
-                grace_end = deadline + timedelta(hours=st.secrets["deadline"].get("grace_period_hours", 24))
-                st.warning(f":material/timer: Grace period ends: {grace_end.strftime('%B %d, %Y at %I:%M %p %Z')}")
+        # Check deadline status and display countdown/warning
+        deadline = get_deadline_datetime()
+        if deadline:
+            if is_past_deadline():
+                if is_within_grace_period():
+                    st.error(":material/schedule: RSVP deadline has passed, but submissions are still being accepted for a limited time.")
+                    grace_end = deadline + timedelta(hours=st.secrets["deadline"].get("grace_period_hours", 24))
+                    st.warning(f":material/timer: Grace period ends: {grace_end.strftime('%B %d, %Y at %I:%M %p %Z')}")
+                else:
+                    st.error(":material/block: RSVP deadline has passed. New submissions are no longer accepted.")
+                    st.info("Please contact the wedding couple directly if you need to make changes to your RSVP.")
+                    return  # Stop rendering the form
+            elif is_within_warning_period():
+                time_remaining = get_time_until_deadline()
+                formatted_time = format_time_remaining(time_remaining)
+
+                st.warning(f":material/schedule: **RSVP Deadline Approaching!**")
+
+                # Create a prominent countdown display
+                with st.container():
+                    st.markdown(f"""
+                    <div style="
+                        background: linear-gradient(90deg, #ff6b6b, #ee5a52);
+                        padding: 15px;
+                        border-radius: 8px;
+                        text-align: center;
+                        color: white;
+                        margin: 10px 0;
+                        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                    ">
+                        <h3>⏰ Time Remaining: {formatted_time}</h3>
+                        <p>Deadline: {deadline.strftime('%B %d, %Y at %I:%M %p %Z')}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
             else:
-                st.error(":material/block: RSVP deadline has passed. New submissions are no longer accepted.")
-                st.info("Please contact the wedding couple directly if you need to make changes to your RSVP.")
-                return  # Stop rendering the form
-        elif is_within_warning_period():
-            time_remaining = get_time_until_deadline()
-            formatted_time = format_time_remaining(time_remaining)
+                # Show normal deadline info
+                time_remaining = get_time_until_deadline()
+                formatted_time = format_time_remaining(time_remaining)
+                st.info(f":material/schedule: **RSVP Deadline**:  {deadline.strftime('%B %d, %Y at %I:%M %p')} ({formatted_time} remaining)")
 
-            st.warning(f":material/schedule: **RSVP Deadline Approaching!**")
-
-            # Create a prominent countdown display
-            with st.container():
-                st.markdown(f"""
-                <div style="
-                    background: linear-gradient(90deg, #ff6b6b, #ee5a52);
-                    padding: 15px;
-                    border-radius: 8px;
-                    text-align: center;
-                    color: white;
-                    margin: 10px 0;
-                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-                ">
-                    <h3>⏰ Time Remaining: {formatted_time}</h3>
-                    <p>Deadline: {deadline.strftime('%B %d, %Y at %I:%M %p %Z')}</p>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            # Show normal deadline info
-            time_remaining = get_time_until_deadline()
-            formatted_time = format_time_remaining(time_remaining)
-            st.info(f":material/schedule: RSVP Deadline: {deadline.strftime('%B %d, %Y at %I:%M %p %Z')} ({formatted_time} remaining)")
-
+    with col2:
+        if st.secrets['wedding'].get('banner_image'):
+            st.image(st.secrets['wedding']['banner_image'])
     st.markdown("---")
     
     # Initialize session state
@@ -427,8 +421,8 @@ def main():
     else:
         # Define and run main pages for non-authenticated users
         pages = [
-            st.Page(event_info_page, title="Event Info", icon=":material/celebration:", default=True),
             st.Page(rsvp_form_page, title="RSVP Form", icon=":material/favorite:"),
+            st.Page(event_info_page, title="Event Info", icon=":material/celebration:", default=True),
             st.Page(admin_login_page, title="Admin Login", icon=":material/lock:"),
         ]
         pg = st.navigation(pages)
