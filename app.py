@@ -244,11 +244,11 @@ def rsvp_form_page():
         st.success(":material/check_circle: RSVP submitted successfully! Thank you for your response.")
         st.balloons()
         
-        if st.button("Submit Another RSVP", type="primary"):
-            reset_form()
-            st.rerun()
+        # if st.button("Submit Another RSVP", type="primary"):
+        #     reset_form()
+        #     st.rerun()
         
-        st.info(":material/lightbulb: If you need to submit another RSVP or make changes, please click the button above.")
+        # st.info(":material/lightbulb: If you need to submit another RSVP or make changes, please click the button above.")
         return
     
     # Check if submission is in progress
@@ -378,68 +378,41 @@ def rsvp_form_page():
         st.rerun()
 
 def main():
-    # Initialize session state
+    """Main application entry point"""
     initialize_session_state()
 
     if st.session_state.authenticated:
-        # Admin authenticated - show admin navigation with logout option
-        _show_admin_sidebar()
+        # Admin is logged in - show only admin pages with sidebar navigation
         _run_admin_navigation()
     else:
-        # Public user navigation
+        # Public user - show RSVP Form, Event Info, and Admin Login
         _run_public_navigation()
 
-def _show_admin_sidebar():
-    """Display admin sidebar with navigation and logout"""
+def _run_admin_navigation():
+    """Admin navigation - sidebar only with admin pages"""
+    # Define admin pages
+    admin_pages = [
+        st.Page(admin_summary_page, title="Summary", icon=":material/bar_chart:", default=True),
+        st.Page(admin_menu_page, title="Menu Planning", icon=":material/restaurant:"),
+        st.Page(admin_data_page, title="Data Export", icon=":material/download:"),
+    ]
+
+    # Create navigation in sidebar
+    pg = st.navigation(admin_pages, position="sidebar")
+
+    # Add logout button to sidebar
     with st.sidebar:
-        st.markdown("**Admin Panel**")
-
-        admin_page_options = [
-            ":material/bar_chart: Summary",
-            ":material/restaurant: Menu Planning",
-            ":material/download: Data Export"
-        ]
-
-        st.radio(
-            "Navigate to:",
-            admin_page_options,
-            key="admin_nav",
-            label_visibility="collapsed"
-        )
-
-        st.markdown("---")
-        if st.button(":material/logout: Logout", type="secondary", width="content"):
+        if st.button(":material/logout: Logout", type="secondary", use_container_width=True):
             st.session_state.authenticated = False
             st.session_state.just_logged_in = False
             st.success("Successfully logged out!")
             st.rerun()
 
-def _run_admin_navigation():
-    """Run admin navigation with all pages available"""
-    admin_page_map = {
-        ":material/bar_chart: Summary": admin_summary_page,
-        ":material/restaurant: Menu Planning": admin_menu_page,
-        ":material/download: Data Export": admin_data_page,
-    }
-
-    # Check if specific admin page is selected in sidebar
-    selected_admin_page = st.session_state.get("admin_nav")
-    if selected_admin_page and selected_admin_page in admin_page_map:
-        admin_page_map[selected_admin_page]()
-    else:
-        # Show standard navigation with all pages
-        pages = [
-            st.Page(event_info_page, title="Event Info", icon=":material/celebration:", default=True),
-            st.Page(rsvp_form_page, title="RSVP Form", icon=":material/favorite:"),
-            st.Page(admin_summary_page, title="Admin Summary", icon=":material/bar_chart:"),
-            st.Page(admin_menu_page, title="Menu Planning", icon=":material/restaurant:"),
-            st.Page(admin_data_page, title="Data Export", icon=":material/download:"),
-        ]
-        pg = st.navigation(pages)
-        pg.run()
+    # Run the selected page
+    pg.run()
 
 def _run_public_navigation():
-    """Run public user navigation"""
+    """Public navigation - top navigation bar with RSVP, Event Info, and Admin Login"""
     pages = [
         st.Page(rsvp_form_page, title="RSVP Form", icon=":material/favorite:", default=True),
         st.Page(event_info_page, title="Event Info", icon=":material/celebration:"),
