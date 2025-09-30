@@ -21,7 +21,7 @@ secondaryBackgroundColor="lavender"
 codeBackgroundColor="powderBlue"
 baseRadius = "medium"
 showWidgetBorder = true
-baseFontSize = 12
+baseFontSize = 11
 font="noto-sans"
 
 [theme.sidebar]

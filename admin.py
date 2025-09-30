@@ -1,73 +1,38 @@
 import streamlit as st
 import pandas as pd
-import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 
-# CSV file path
-CSV_FILE = "wedding_rsvps.csv"
+# Import shared utilities
+from utils import (
+    load_rsvps, get_deadline_datetime, is_past_deadline,
+    get_time_until_deadline, format_time_remaining
+)
 
-# Admin password (change this to your desired password)
-ADMIN_PASSWORD = "wedding2024"
+# Admin password (configured in secrets.toml)
+ADMIN_PASSWORD = st.secrets["admin"]["password"]
 
 st.set_page_config(
-    page_title="Wedding RSVP Tracker",
-    page_icon="💍",
+    page_title=st.secrets["wedding"]["page_title"],
+    page_icon=st.secrets["wedding"]["page_icon"],
     #layout="wide"
 )
 
-def load_rsvps():
-    """Load existing RSVP data from CSV file"""
-    if os.path.exists(CSV_FILE):
-        try:
-            return pd.read_csv(CSV_FILE)
-        except:
-            return pd.DataFrame()
-    return pd.DataFrame()
 
 def show_login_success():
-    """Display a comprehensive login success acknowledgment"""
-    st.balloons()  # Add celebratory animation
-    
-    # Create a prominent success container
-    with st.container():
-        st.markdown("""
-        <div style="
-            background: linear-gradient(90deg, #4CAF50, #45a049);
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            color: white;
-            margin: 20px 0;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        ">
-            <h2>🎉 Welcome to Admin Dashboard! 🎉</h2>
-            <p>Login successful! You now have access to all RSVP management features.</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Brief pause to show the success message
+    """Display a simple login success acknowledgment"""
+    st.balloons()
+    st.success(":material/check_circle: Welcome to Admin Dashboard!")
+    st.info("You now have access to all RSVP management features.")
     time.sleep(1)
 
 def admin_welcome_header():
     """Display a welcome header for authenticated admin users"""
-    st.markdown("""
-    <div style="
-        background: linear-gradient(90deg, #1e3c72, #2a5298);
-        padding: 15px;
-        border-radius: 8px;
-        color: white;
-        margin-bottom: 20px;
-        text-align: center;
-    ">
-        <h3>👋 Welcome, Admin!</h3>
-        <p>You are successfully logged in to the Wedding RSVP Management System</p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.info(":material/admin_panel_settings: **Welcome, Admin!** You are logged in to the Wedding RSVP Management System")
 
 def admin_login_page():
     """Admin login page"""
-    st.title("🔐 Admin Login")
+    st.title(":material/lock: Admin Login")
     st.write("Please enter the password to access the RSVP admin dashboard.")
     
     password = st.text_input("Password:", type="password", key="admin_password")
@@ -77,34 +42,20 @@ def admin_login_page():
             # Set authentication state
             st.session_state.authenticated = True
             st.session_state.just_logged_in = True
-            
-            # Show immediate success feedback
-            st.success("✅ Access granted! Welcome to the admin dashboard!")
-            
-            # Show comprehensive login success acknowledgment
+
+            # Show login success
             show_login_success()
-            
-            # Display login timestamp
-            login_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            st.info(f"🕐 Login successful at: {login_time}")
-            
-            # Auto-redirect message
-            st.markdown("**Redirecting to admin dashboard in 3 seconds...**")
-            
-            # Add a brief delay before rerun for better UX
-            time.sleep(3)
             st.rerun()
         else:
-            st.error("❌ Incorrect password. Please try again.")
-            st.warning("🔔 Access denied - Invalid credentials")
+            st.error(":material/cancel: Incorrect password. Please try again.")
     
     st.markdown("---")
-    st.info("💡 If you're a guest looking to submit your RSVP, please use the RSVP form instead.")
+    st.info(":material/lightbulb: If you're a guest looking to submit your RSVP, please use the RSVP form instead.")
 
 def admin_summary_page():
     """Admin summary page"""
     if not st.session_state.authenticated:
-        st.error("🔐 Please log in to access this page.")
+        st.error(":material/lock: Please log in to access this page.")
         st.stop()
     
     # Show welcome header for authenticated users
@@ -112,18 +63,65 @@ def admin_summary_page():
     
     # Check if user just logged in to show additional acknowledgment
     if st.session_state.get('just_logged_in', False):
-        st.success("🎯 Successfully accessed RSVP Summary Dashboard!")
+        st.success(":material/target: Successfully accessed RSVP Summary Dashboard!")
         st.session_state.just_logged_in = False  # Reset the flag
     
-    st.title("📊 RSVP Summary")
-    
-    # Logout button
-    if st.button("🚪 Logout", type="secondary"):
-        st.session_state.authenticated = False
-        st.session_state.just_logged_in = False
-        st.success("👋 Successfully logged out!")
-        st.rerun()
-    
+    st.title(":material/bar_chart: RSVP Summary")
+
+    # Display deadline status
+    deadline = get_deadline_datetime()
+    if deadline:
+        st.subheader(":material/schedule: RSVP Deadline Status")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if is_past_deadline():
+                st.error(f":material/schedule: **Deadline has passed**")
+                st.write(f"Deadline was: {deadline.strftime('%B %d, %Y at %I:%M %p %Z')}")
+
+                # Check if still in grace period
+                grace_hours = st.secrets["deadline"].get("grace_period_hours", 24)
+                grace_end = deadline + timedelta(hours=grace_hours)
+                now = datetime.now(deadline.tzinfo)
+
+                if now <= grace_end:
+                    st.warning(f":material/timer: Still in grace period until: {grace_end.strftime('%B %d, %Y at %I:%M %p %Z')}")
+                else:
+                    st.info(":material/block: Grace period has also ended")
+            else:
+                time_remaining = get_time_until_deadline()
+                formatted_time = format_time_remaining(time_remaining)
+                st.success(f":material/schedule: **Deadline is active**")
+                st.write(f"Deadline: {deadline.strftime('%B %d, %Y at %I:%M %p %Z')}")
+
+                # Create countdown display
+                with st.container():
+                    st.markdown(f"""
+                    <div style="
+                        background: linear-gradient(90deg, #4CAF50, #45a049);
+                        padding: 10px;
+                        border-radius: 5px;
+                        text-align: center;
+                        color: white;
+                        margin: 5px 0;
+                    ">
+                        <h4>⏰ Time Remaining: {formatted_time}</h4>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+        with col2:
+            # Deadline configuration display
+            st.info(":material/settings: **Deadline Configuration**")
+            warning_days = st.secrets["deadline"].get("warning_days", 7)
+            grace_hours = st.secrets["deadline"].get("grace_period_hours", 24)
+
+            st.write(f"• Warning period: {warning_days} days before deadline")
+            st.write(f"• Grace period: {grace_hours} hours after deadline")
+            st.write(f"• Timezone: {st.secrets['deadline'].get('timezone', 'UTC')}")
+
+        st.markdown("---")
+
     # Load data
     df = load_rsvps()
     
@@ -169,35 +167,28 @@ def admin_summary_page():
                     if row['attending'] == 'Yes' and row['guest_name']:
                         st.write(f"Guest: {row['guest_name']}")
                 with col2:
-                    status_color = "🟢" if row['attending'] == 'Yes' else "🔴"
+                    status_color = ":material/check_circle:" if row['attending'] == 'Yes' else ":material/cancel:"
                     st.write(f"{status_color} {row['attending']}")
                 with col3:
                     st.write(f"*{row['timestamp'].split()[0]}*")  # Just the date
                 
                 if row['comments']:
-                    st.write(f"💬 {row['comments']}")
+                    st.write(f":material/chat_bubble: {row['comments']}")
                 
                 st.markdown("---")
     else:
-        st.info("📭 No RSVPs have been submitted yet.")
+        st.info(":material/inbox: No RSVPs have been submitted yet.")
 
 def admin_menu_page():
     """Admin menu planning page"""
     if not st.session_state.authenticated:
-        st.error("🔐 Please log in to access this page.")
+        st.error(":material/lock: Please log in to access this page.")
         st.stop()
     
     # Show welcome header for authenticated users
     admin_welcome_header()
     
-    st.title("🍽️ Menu Planning")
-    
-    # Logout button
-    if st.button("🚪 Logout", type="secondary"):
-        st.session_state.authenticated = False
-        st.session_state.just_logged_in = False
-        st.success("👋 Successfully logged out!")
-        st.rerun()
+    st.title(":material/restaurant: Menu Planning")
     
     # Load data
     df = load_rsvps()
@@ -210,7 +201,7 @@ def admin_menu_page():
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.subheader("🥗 Starters")
+            st.subheader(":material/restaurant: Starters")
             starter_counts = attending_df['starter_choice'].value_counts()
             for starter, count in starter_counts.items():
                 st.write(f"**{starter}:** {count} guests")
@@ -220,7 +211,7 @@ def admin_menu_page():
                 st.bar_chart(starter_counts)
         
         with col2:
-            st.subheader("🍽️ Main Courses")
+            st.subheader(":material/dinner_dining: Main Courses")
             main_counts = attending_df['main_choice'].value_counts()
             for main, count in main_counts.items():
                 st.write(f"**{main}:** {count} guests")
@@ -230,7 +221,7 @@ def admin_menu_page():
                 st.bar_chart(main_counts)
         
         with col3:
-            st.subheader("🍰 Desserts")
+            st.subheader(":material/cake: Desserts")
             dessert_counts = attending_df['dessert_choice'].value_counts()
             for dessert, count in dessert_counts.items():
                 st.write(f"**{dessert}:** {count} guests")
@@ -240,7 +231,7 @@ def admin_menu_page():
                 st.bar_chart(dessert_counts)
         
         # Dietary requirements
-        st.subheader("🥜 Dietary Requirements & Allergies")
+        st.subheader(":material/health_and_safety: Dietary Requirements & Allergies")
         dietary_df = attending_df[attending_df['dietary_requirements'].notna() & 
                                 (attending_df['dietary_requirements'] != '')]
         
@@ -255,33 +246,26 @@ def admin_menu_page():
 def admin_data_page():
     """Admin detailed data page"""
     if not st.session_state.authenticated:
-        st.error("🔐 Please log in to access this page.")
+        st.error(":material/lock: Please log in to access this page.")
         st.stop()
     
     # Show welcome header for authenticated users
     admin_welcome_header()
     
-    st.title("📋 Detailed Data")
-    
-    # Logout button
-    if st.button("🚪 Logout", type="secondary"):
-        st.session_state.authenticated = False
-        st.session_state.just_logged_in = False
-        st.success("👋 Successfully logged out!")
-        st.rerun()
+    st.title(":material/description: Detailed Data")
     
     # Load data
     df = load_rsvps()
     
     if not df.empty:
         # Export functionality
-        st.subheader("📥 Export Data")
+        st.subheader(":material/download: Export Data")
         col1, col2 = st.columns(2)
         
         with col1:
             csv = df.to_csv(index=False)
             st.download_button(
-                label="📄 Download All Data (CSV)",
+                label=":material/description: Download All Data (CSV)",
                 data=csv,
                 file_name=f"wedding_rsvps_all_{datetime.now().strftime('%Y%m%d')}.csv",
                 mime="text/csv"
@@ -293,14 +277,14 @@ def admin_data_page():
             if not attending_df.empty:
                 attending_csv = attending_df.to_csv(index=False)
                 st.download_button(
-                    label="✅ Download Attending Only (CSV)",
+                    label=":material/check_circle: Download Attending Only (CSV)",
                     data=attending_csv,
                     file_name=f"wedding_rsvps_attending_{datetime.now().strftime('%Y%m%d')}.csv",
                     mime="text/csv"
                 )
         
         # Search and filter
-        st.subheader("🔍 Search & Filter")
+        st.subheader(":material/search: Search & Filter")
         search_term = st.text_input("Search by contact name or guest name:")
         
         filtered_df = df
@@ -311,11 +295,11 @@ def admin_data_page():
             ]
         
         # Display data table
-        st.subheader("📋 Complete RSVP Data")
+        st.subheader(":material/table_view: Complete RSVP Data")
         if not filtered_df.empty:
             st.dataframe(
                 filtered_df,
-                use_container_width=True,
+                width="content",
                 column_config={
                     "timestamp": "Submitted",
                     "contact_name": "Contact",
@@ -335,4 +319,4 @@ def admin_data_page():
         else:
             st.write("No data matches your search criteria.")
     else:
-        st.info("📭 No RSVPs have been submitted yet.")
+        st.info(":material/inbox: No RSVPs have been submitted yet.")

@@ -1,72 +1,54 @@
 import streamlit as st
-import pandas as pd
-import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Import admin functions
 from admin import admin_login_page, admin_summary_page, admin_menu_page, admin_data_page
 
+# Import event info page
+from event_info import event_info_page
+
+# Import shared utilities
+from utils import (
+    save_rsvp, get_deadline_datetime, is_past_deadline,
+    is_within_grace_period, is_within_warning_period, get_time_until_deadline,
+    format_time_remaining
+)
+
 # Configure the page
 st.set_page_config(
-    page_title="Wedding RSVP Tracker",
-    page_icon="💍",
+    page_title=st.secrets["wedding"]["page_title"],
+    page_icon=st.secrets["wedding"]["page_icon"],
     #layout="wide"
 )
 # Custom HTML/CSS for the banner
-custom_html = """
-<div class="banner">
-    <img src="https://www.realweddings.co.uk/detail/the-white-hart-ufford/m/v/showcase_hero/91652/459927009_18285199603224087_4291546012477049125_n.jpg" alt="Banner Image">
+custom_html = f"""
+<div style="
+            padding: 0px;
+            margin: 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+    <img src="{st.secrets['wedding']['banner_image']}" alt="Banner Image">
 </div>
-<style>
-    .banner {
-        width: 160%;
-        height: 200px;
-        overflow: hidden;
-    }
-    .banner img {
-        width: 100%;
-        object-fit: cover;
-    }
-</style>
 """
 # Display the custom HTML
 st.components.v1.html(custom_html)
-# CSV file path
-CSV_FILE = "wedding_rsvps.csv"
-
 # Menu options
-STARTERS = ["Prawn Cocktail", "Ham Hock Terrine (GF)", "Deep Fried Camembert (V)"]
-MAINS = ["Braised and Confit Shoulder of Lamb", "Salmon en Papillote", "Wild Mushroom and Spinach Wellington (V/GF)"]
-DESSERTS = ["Lemon Cheesecake (V)", "Eton Mess (V/GF)", "Cheeseboard"]
-
-def load_rsvps():
-    """Load existing RSVP data from CSV file"""
-    if os.path.exists(CSV_FILE):
-        try:
-            return pd.read_csv(CSV_FILE)
-        except:
-            return pd.DataFrame()
-    return pd.DataFrame()
-
-def save_rsvp(rsvp_data):
-    """Save RSVP data to CSV file"""
-    df = load_rsvps()
-    new_df = pd.DataFrame([rsvp_data])
-    df = pd.concat([df, new_df], ignore_index=True)
-    df.to_csv(CSV_FILE, index=False)
+STARTERS = st.secrets["menu"]["starters"]
+MAINS = st.secrets["menu"]["mains"]
+DESSERTS = st.secrets["menu"]["desserts"]
 
 def initialize_session_state():
     """Initialize session state variables"""
-    if 'guests' not in st.session_state:
-        st.session_state.guests = [{}]
-    if 'form_submitted' not in st.session_state:
-        st.session_state.form_submitted = False
-    if 'submission_in_progress' not in st.session_state:
-        st.session_state.submission_in_progress = False
-    if 'authenticated' not in st.session_state:
-        st.session_state.authenticated = False
-    if 'form_data' not in st.session_state:
-        st.session_state.form_data = {}
+    defaults = {
+        'guests': [{}],
+        'form_submitted': False,
+        'submission_in_progress': False,
+        'authenticated': False,
+        'form_data': {}
+    }
+
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
 
 def add_guest():
     """Add a new guest to the session state"""
@@ -80,33 +62,52 @@ def remove_guest(index):
 
 def reset_form():
     """Reset the form after submission"""
-    st.session_state.guests = [{}]
-    st.session_state.form_submitted = False
-    st.session_state.submission_in_progress = False
-    st.session_state.form_data = {}
-    
-    # Clear all form fields
-    form_keys_to_clear = [
-        "attending", "contact_name", "contact_email", "contact_phone", "comments"
-    ]
-    
-    # Clear guest-specific fields
+    # Reset main form state
+    form_state_reset = {
+        'guests': [{}],
+        'form_submitted': False,
+        'submission_in_progress': False,
+        'form_data': {}
+    }
+
+    for key, value in form_state_reset.items():
+        st.session_state[key] = value
+
+    # Clear form fields
+    form_keys = ["attending", "contact_name", "contact_email", "contact_phone", "comments"]
+
+    # Add guest-specific fields
     for i in range(10):  # Clear up to 10 guests worth of data
-        guest_keys = [
-            f"guest_name_{i}", f"starter_{i}", f"main_{i}", 
+        form_keys.extend([
+            f"guest_name_{i}", f"starter_{i}", f"main_{i}",
             f"dessert_{i}", f"dietary_{i}"
-        ]
-        form_keys_to_clear.extend(guest_keys)
-    
+        ])
+
     # Remove the keys from session state
-    for key in form_keys_to_clear:
-        if key in st.session_state:
-            del st.session_state[key]
+    for key in form_keys:
+        st.session_state.pop(key, None)
 
 def process_submission():
     """Process the RSVP submission"""
     form_data = st.session_state.form_data
-    
+
+    # Check deadline enforcement first
+    if is_past_deadline() and not is_within_grace_period():
+        st.error(":material/block: RSVP deadline has passed. Submissions are no longer accepted.")
+        st.info("Please contact the wedding couple directly if you need to make changes to your RSVP.")
+        st.session_state.submission_in_progress = False
+        return False
+
+    # Show warning if in grace period
+    if is_within_grace_period():
+        st.warning(":material/timer: Submitting during grace period - deadline has passed but submissions are still being accepted.")
+
+    # Show urgency warning if within warning period
+    if is_within_warning_period():
+        time_remaining = get_time_until_deadline()
+        formatted_time = format_time_remaining(time_remaining)
+        st.warning(f":material/schedule: Submitting close to deadline - {formatted_time} remaining!")
+
     # Validation
     errors = []
     
@@ -114,7 +115,7 @@ def process_submission():
         errors.append("Primary contact name is required")
     
     if form_data.get('attending') == "Yes, I/we will attend":
-        for i, guest in enumerate(st.session_state.guests):
+        for i, _ in enumerate(st.session_state.guests):
             guest_name = form_data.get(f"guest_name_{i}", "")
             starter = form_data.get(f"starter_{i}", "")
             main = form_data.get(f"main_{i}", "")
@@ -144,7 +145,7 @@ def process_submission():
     try:
         if form_data.get('attending') == "Yes, I/we will attend":
             # Save each guest as a separate row
-            for i, guest in enumerate(st.session_state.guests):
+            for i, _ in enumerate(st.session_state.guests):
                 rsvp_data = {
                     "timestamp": timestamp,
                     "contact_name": form_data.get('contact_name', ''),
@@ -189,27 +190,69 @@ def process_submission():
 def rsvp_form_page():
     """Main RSVP form page"""
     st.markdown("---")
-    st.subheader("Robert & Charlotte Wedding RSVP")
-    st.write("We're excited to celebrate our special day with you! Please let us know if you'll be joining us.")
+    st.subheader(f"{st.secrets['wedding']['wedding_couple']} Wedding RSVP")
+    st.write(st.secrets["ui"]["welcome_message"])
+
+    # Check deadline status and display countdown/warning
+    deadline = get_deadline_datetime()
+    if deadline:
+        if is_past_deadline():
+            if is_within_grace_period():
+                st.error(":material/schedule: RSVP deadline has passed, but submissions are still being accepted for a limited time.")
+                grace_end = deadline + timedelta(hours=st.secrets["deadline"].get("grace_period_hours", 24))
+                st.warning(f":material/timer: Grace period ends: {grace_end.strftime('%B %d, %Y at %I:%M %p %Z')}")
+            else:
+                st.error(":material/block: RSVP deadline has passed. New submissions are no longer accepted.")
+                st.info("Please contact the wedding couple directly if you need to make changes to your RSVP.")
+                return  # Stop rendering the form
+        elif is_within_warning_period():
+            time_remaining = get_time_until_deadline()
+            formatted_time = format_time_remaining(time_remaining)
+
+            st.warning(f":material/schedule: **RSVP Deadline Approaching!**")
+
+            # Create a prominent countdown display
+            with st.container():
+                st.markdown(f"""
+                <div style="
+                    background: linear-gradient(90deg, #ff6b6b, #ee5a52);
+                    padding: 15px;
+                    border-radius: 8px;
+                    text-align: center;
+                    color: white;
+                    margin: 10px 0;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                ">
+                    <h3>⏰ Time Remaining: {formatted_time}</h3>
+                    <p>Deadline: {deadline.strftime('%B %d, %Y at %I:%M %p %Z')}</p>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            # Show normal deadline info
+            time_remaining = get_time_until_deadline()
+            formatted_time = format_time_remaining(time_remaining)
+            st.info(f":material/schedule: RSVP Deadline: {deadline.strftime('%B %d, %Y at %I:%M %p %Z')} ({formatted_time} remaining)")
+
+    st.markdown("---")
     
     # Initialize session state
     initialize_session_state()
     
     # Check if form has been successfully submitted
     if st.session_state.form_submitted:
-        st.success("✅ RSVP submitted successfully! Thank you for your response.")
+        st.success(":material/check_circle: RSVP submitted successfully! Thank you for your response.")
         st.balloons()
         
         if st.button("Submit Another RSVP", type="primary"):
             reset_form()
             st.rerun()
         
-        st.info("💡 If you need to submit another RSVP or make changes, please click the button above.")
+        st.info(":material/lightbulb: If you need to submit another RSVP or make changes, please click the button above.")
         return
     
     # Check if submission is in progress
     if st.session_state.submission_in_progress:
-        st.info("🔄 Processing your RSVP submission...")
+        st.info(":material/refresh: Processing your RSVP submission...")
         with st.spinner("Please wait..."):
             if process_submission():
                 st.rerun()
@@ -240,55 +283,55 @@ def rsvp_form_page():
         st.write("Please provide details for each guest attending:")
         
         # Display guests
-        for i, guest in enumerate(st.session_state.guests):
+        for i, _ in enumerate(st.session_state.guests):
             with st.container(border=True):
                 st.markdown(f"**Guest {i + 1}**")
-                
+
                 # Create columns for guest details
-                guest_col1, guest_col2, guest_col3 = st.columns([2, 1, 1])
-                
+                guest_col1, guest_col2 = st.columns([3, 1])
+
                 with guest_col1:
-                    guest_name = st.text_input(
+                    st.text_input(
                         f"Guest Name*",
                         key=f"guest_name_{i}",
                         placeholder="Enter guest name"
                     )
-                
+
                 with guest_col2:
                     if i > 0:  # Don't show remove button for first guest
                         if st.button(f"Remove", key=f"remove_{i}"):
                             remove_guest(i)
                             st.rerun()
-                
+
                 # Menu selections
                 menu_col1, menu_col2, menu_col3 = st.columns([1.2, 1.8, 1.1])
-                
+
                 with menu_col1:
-                    starter = st.selectbox(
+                    st.selectbox(
                         "Starter Choice*",
                         [""] + STARTERS,
                         key=f"starter_{i}",
                         index=0
                     )
-                
+
                 with menu_col2:
-                    main = st.selectbox(
+                    st.selectbox(
                         "Main Course*",
                         [""] + MAINS,
                         key=f"main_{i}",
                         index=0
                     )
-                
+
                 with menu_col3:
-                    dessert = st.selectbox(
+                    st.selectbox(
                         "Dessert Choice*",
                         [""] + DESSERTS,
                         key=f"dessert_{i}",
                         index=0
                     )
-                
+
                 # Dietary requirements
-                dietary = st.text_area(
+                st.text_area(
                     "Dietary Requirements/Allergies",
                     key=f"dietary_{i}",
                     placeholder="Please list any allergies or dietary requirements",
@@ -311,7 +354,7 @@ def rsvp_form_page():
     
     # Submit button
     st.markdown("---")
-    if st.button("Submit RSVP", type="primary", use_container_width=True):
+    if st.button("Submit RSVP", type="primary", width="content"):
         # Store form data in session state before processing
         st.session_state.form_data = {
             'attending': attending,
@@ -322,7 +365,7 @@ def rsvp_form_page():
         }
         
         # Store guest data
-        for i, guest in enumerate(st.session_state.guests):
+        for i, _ in enumerate(st.session_state.guests):
             st.session_state.form_data[f"guest_name_{i}"] = st.session_state.get(f"guest_name_{i}", "")
             st.session_state.form_data[f"starter_{i}"] = st.session_state.get(f"starter_{i}", "")
             st.session_state.form_data[f"main_{i}"] = st.session_state.get(f"main_{i}", "")
@@ -336,25 +379,60 @@ def rsvp_form_page():
 def main():
     # Initialize session state
     initialize_session_state()
-    
-    # Define pages based on authentication status
-    pages = [
-        st.Page(rsvp_form_page, title="RSVP Form", icon="💍", default=True),
-        st.Page(admin_login_page, title="Admin Login", icon="🔐"),
-    ]
-    
-    # Add admin pages only if authenticated
+
+    # Define admin pages
+    admin_pages = {
+        ":material/bar_chart: Summary": admin_summary_page,
+        ":material/restaurant: Menu Planning": admin_menu_page,
+        ":material/download: Data Export": admin_data_page,
+    }
+
     if st.session_state.authenticated:
-        admin_pages = [
-            st.Page(admin_summary_page, title="Summary", icon="📊"),
-            st.Page(admin_menu_page, title="Menu Planning", icon="🍽️"),
-            st.Page(admin_data_page, title="Data Export", icon="📋"),
+        # Admin is authenticated - show all pages including RSVP form
+        with st.sidebar:
+            st.markdown("**Admin Panel**")
+
+            # Create admin page navigation
+            st.radio(
+                "Navigate to:",
+                list(admin_pages.keys()),
+                key="admin_nav",
+                label_visibility="collapsed"
+            )
+
+            st.markdown("---")
+            if st.button(":material/logout: Logout", type="secondary", width="content"):
+                st.session_state.authenticated = False
+                st.session_state.just_logged_in = False
+                st.success("Successfully logged out!")
+                st.rerun()
+
+        # Define pages for authenticated admin (including RSVP form)
+        admin_all_pages = [
+            st.Page(event_info_page, title="Event Info", icon=":material/celebration:", default=True),
+            st.Page(rsvp_form_page, title="RSVP Form", icon=":material/favorite:"),
+            st.Page(admin_summary_page, title="Admin Summary", icon=":material/bar_chart:"),
+            st.Page(admin_menu_page, title="Menu Planning", icon=":material/restaurant:"),
+            st.Page(admin_data_page, title="Data Export", icon=":material/download:"),
         ]
-        pages.extend(admin_pages)
-    
-    # Navigation
-    pg = st.navigation(pages)
-    pg.run()
+
+        # Check if admin navigation is selected, if so show that page
+        selected_admin_page = st.session_state.get("admin_nav")
+        if selected_admin_page and selected_admin_page in admin_pages:
+            admin_pages[selected_admin_page]()
+        else:
+            # Show regular navigation with all pages
+            pg = st.navigation(admin_all_pages)
+            pg.run()
+    else:
+        # Define and run main pages for non-authenticated users
+        pages = [
+            st.Page(event_info_page, title="Event Info", icon=":material/celebration:", default=True),
+            st.Page(rsvp_form_page, title="RSVP Form", icon=":material/favorite:"),
+            st.Page(admin_login_page, title="Admin Login", icon=":material/lock:"),
+        ]
+        pg = st.navigation(pages)
+        pg.run()
 
 if __name__ == "__main__":
     main()
