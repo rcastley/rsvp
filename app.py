@@ -21,6 +21,13 @@ st.set_page_config(
     #layout="wide"
 )
 
+# Constants
+MAX_GUESTS_FOR_CLEANUP = 20  # Maximum number of guests to clear from session state
+COLUMN_RATIO_HEADER = [2.5, 1]  # Column ratio for header layout
+COLUMN_RATIO_CONTACT = [3, 4, 2]  # Column ratio for contact information
+COLUMN_RATIO_GUEST = [3, 1]  # Column ratio for guest details
+COLUMN_RATIO_MENU = [1.2, 1.8, 1.1]  # Column ratio for menu selections
+
 # Menu options
 STARTERS = st.secrets["menu"]["starters"]
 MAINS = st.secrets["menu"]["mains"]
@@ -67,7 +74,7 @@ def reset_form():
     form_keys = ["attending", "contact_name", "contact_email", "contact_phone", "comments"]
 
     # Add guest-specific fields
-    for i in range(10):  # Clear up to 10 guests worth of data
+    for i in range(MAX_GUESTS_FOR_CLEANUP):
         form_keys.extend([
             f"guest_name_{i}", f"starter_{i}", f"main_{i}",
             f"dessert_{i}", f"dietary_{i}"
@@ -179,7 +186,7 @@ def process_submission():
 
 def rsvp_form_page():
     """Main RSVP form page"""
-    col1, col2 = st.columns([2.5, 1])
+    col1, col2 = st.columns(COLUMN_RATIO_HEADER)
     with col1:
         st.subheader(f"{st.secrets['wedding']['wedding_couple']} Wedding RSVP")
         st.write(st.secrets["ui"]["welcome_message"])
@@ -264,7 +271,7 @@ def rsvp_form_page():
     
     # Contact Information
     st.markdown("**Contact Information**")
-    contact_col1, contact_col2, contact_col3 = st.columns([3, 4, 2])
+    contact_col1, contact_col2, contact_col3 = st.columns(COLUMN_RATIO_CONTACT)
     with contact_col1:
         contact_name = st.text_input("Primary Contact Name*", key="contact_name", width=300)
     with contact_col2:
@@ -282,7 +289,7 @@ def rsvp_form_page():
                 st.markdown(f"**Guest {i + 1}**")
 
                 # Create columns for guest details
-                guest_col1, guest_col2 = st.columns([3, 1])
+                guest_col1, guest_col2 = st.columns(COLUMN_RATIO_GUEST)
 
                 with guest_col1:
                     st.text_input(
@@ -298,7 +305,7 @@ def rsvp_form_page():
                             st.rerun()
 
                 # Menu selections
-                menu_col1, menu_col2, menu_col3 = st.columns([1.2, 1.8, 1.1])
+                menu_col1, menu_col2, menu_col3 = st.columns(COLUMN_RATIO_MENU)
 
                 with menu_col1:
                     st.selectbox(
@@ -374,59 +381,72 @@ def main():
     # Initialize session state
     initialize_session_state()
 
-    # Define admin pages
-    admin_pages = {
+    if st.session_state.authenticated:
+        # Admin authenticated - show admin navigation with logout option
+        _show_admin_sidebar()
+        _run_admin_navigation()
+    else:
+        # Public user navigation
+        _run_public_navigation()
+
+def _show_admin_sidebar():
+    """Display admin sidebar with navigation and logout"""
+    with st.sidebar:
+        st.markdown("**Admin Panel**")
+
+        admin_page_options = [
+            ":material/bar_chart: Summary",
+            ":material/restaurant: Menu Planning",
+            ":material/download: Data Export"
+        ]
+
+        st.radio(
+            "Navigate to:",
+            admin_page_options,
+            key="admin_nav",
+            label_visibility="collapsed"
+        )
+
+        st.markdown("---")
+        if st.button(":material/logout: Logout", type="secondary", width="content"):
+            st.session_state.authenticated = False
+            st.session_state.just_logged_in = False
+            st.success("Successfully logged out!")
+            st.rerun()
+
+def _run_admin_navigation():
+    """Run admin navigation with all pages available"""
+    admin_page_map = {
         ":material/bar_chart: Summary": admin_summary_page,
         ":material/restaurant: Menu Planning": admin_menu_page,
         ":material/download: Data Export": admin_data_page,
     }
 
-    if st.session_state.authenticated:
-        # Admin is authenticated - show all pages including RSVP form
-        with st.sidebar:
-            st.markdown("**Admin Panel**")
-
-            # Create admin page navigation
-            st.radio(
-                "Navigate to:",
-                list(admin_pages.keys()),
-                key="admin_nav",
-                label_visibility="collapsed"
-            )
-
-            st.markdown("---")
-            if st.button(":material/logout: Logout", type="secondary", width="content"):
-                st.session_state.authenticated = False
-                st.session_state.just_logged_in = False
-                st.success("Successfully logged out!")
-                st.rerun()
-
-        # Define pages for authenticated admin (including RSVP form)
-        admin_all_pages = [
+    # Check if specific admin page is selected in sidebar
+    selected_admin_page = st.session_state.get("admin_nav")
+    if selected_admin_page and selected_admin_page in admin_page_map:
+        admin_page_map[selected_admin_page]()
+    else:
+        # Show standard navigation with all pages
+        pages = [
             st.Page(event_info_page, title="Event Info", icon=":material/celebration:", default=True),
             st.Page(rsvp_form_page, title="RSVP Form", icon=":material/favorite:"),
             st.Page(admin_summary_page, title="Admin Summary", icon=":material/bar_chart:"),
             st.Page(admin_menu_page, title="Menu Planning", icon=":material/restaurant:"),
             st.Page(admin_data_page, title="Data Export", icon=":material/download:"),
         ]
-
-        # Check if admin navigation is selected, if so show that page
-        selected_admin_page = st.session_state.get("admin_nav")
-        if selected_admin_page and selected_admin_page in admin_pages:
-            admin_pages[selected_admin_page]()
-        else:
-            # Show regular navigation with all pages
-            pg = st.navigation(admin_all_pages)
-            pg.run()
-    else:
-        # Define and run main pages for non-authenticated users
-        pages = [
-            st.Page(rsvp_form_page, title="RSVP Form", icon=":material/favorite:"),
-            st.Page(event_info_page, title="Event Info", icon=":material/celebration:", default=True),
-            st.Page(admin_login_page, title="Admin Login", icon=":material/lock:"),
-        ]
         pg = st.navigation(pages)
         pg.run()
+
+def _run_public_navigation():
+    """Run public user navigation"""
+    pages = [
+        st.Page(rsvp_form_page, title="RSVP Form", icon=":material/favorite:", default=True),
+        st.Page(event_info_page, title="Event Info", icon=":material/celebration:"),
+        st.Page(admin_login_page, title="Admin Login", icon=":material/lock:"),
+    ]
+    pg = st.navigation(pages, position="top")
+    pg.run()
 
 if __name__ == "__main__":
     main()

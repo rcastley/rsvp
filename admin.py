@@ -12,13 +12,6 @@ from utils import (
 # Admin password (configured in secrets.toml)
 ADMIN_PASSWORD = st.secrets["admin"]["password"]
 
-st.set_page_config(
-    page_title=st.secrets["wedding"]["page_title"],
-    page_icon=st.secrets["wedding"]["page_icon"],
-    #layout="wide"
-)
-
-
 def show_login_success():
     """Display a simple login success acknowledgment"""
     st.balloons()

@@ -116,7 +116,7 @@ def event_info_page():
         accommodations = st.secrets['event']['accommodations']
         
         for hotel in accommodations:
-            with st.expander(f"🏨 {hotel['name']}", expanded=False):
+            with st.expander(f":material/hotel: {hotel['name']}", expanded=False):
                 st.write(f"**Address:** {hotel['address']}")
                 
                 if hotel.get('distance'):
@@ -126,10 +126,10 @@ def event_info_page():
                     st.write(f"**Phone:** {hotel['phone']}")
                 
                 if hotel.get('booking_code'):
-                    st.info(f"💡 Use booking code: **{hotel['booking_code']}** for our group rate")
+                    st.info(f":material/info: Use booking code: **{hotel['booking_code']}** for our group rate")
                 
                 if hotel.get('website'):
-                    st.markdown(f"[🔗 Visit Website]({hotel['website']})")
+                    st.markdown(f"[:material/link: Visit Website]({hotel['website']})")
                 
                 if hotel.get('notes'):
                     st.write(hotel['notes'])
@@ -157,60 +157,74 @@ def event_info_page():
         st.markdown("---")
     
     # Dress Code
-    dress_code = st.secrets['event'].get('dress_code')
-    if dress_code:
-        st.header(":material/checkroom: Dress Code")
-        st.write(dress_code)
+    # dress_code = st.secrets['event'].get('dress_code')
+    # if dress_code:
+    #     st.header(":material/checkroom: Dress Code")
+    #     st.write(dress_code)
         
-        dress_code_notes = st.secrets['event'].get('dress_code_notes')
-        if dress_code_notes:
-            st.info(dress_code_notes)
+    #     dress_code_notes = st.secrets['event'].get('dress_code_notes')
+    #     if dress_code_notes:
+    #         st.info(dress_code_notes)
         
-        st.markdown("---")
+    #     st.markdown("---")
     
     # Gift Registry
-    if st.secrets['event'].get('registry'):
-        st.header(":material/card_giftcard: Gift Registry")
-        st.write(st.secrets['event'].get('registry_message', 
-                 'Your presence is the greatest gift, but if you wish to give something, we are registered at:'))
-        
-        registries = st.secrets['event']['registry']
-        
-        reg_cols = st.columns(len(registries))
-        for idx, registry in enumerate(registries):
-            with reg_cols[idx]:
-                st.markdown(f"""
-                <div style='
-                    text-align: center; 
-                    padding: 20px; 
-                    border: 1px solid #ddd; 
-                    border-radius: 10px;
-                    background-color: #f9f9f9;
-                '>
-                    <h3>{registry['name']}</h3>
-                    <a href='{registry['url']}' target='_blank' style='
-                        text-decoration: none;
-                        background-color: #4CAF50;
-                        color: white;
-                        padding: 10px 20px;
-                        border-radius: 5px;
-                        display: inline-block;
-                        margin-top: 10px;
-                    '>View Registry</a>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        st.markdown("---")
+    registries = st.secrets['event'].get('registry')
+    if registries:
+        # Filter out registries with empty name or URL
+        valid_registries = [
+            r for r in registries
+            if r.get('name', '').strip() and r.get('url', '').strip()
+        ]
+
+        if valid_registries:
+            st.header(":material/card_giftcard: Gift Registry")
+            st.write(st.secrets['event'].get('registry_message',
+                     'Your presence is the greatest gift, but if you wish to give something, we are registered at:'))
+
+            reg_cols = st.columns(len(valid_registries))
+            for idx, registry in enumerate(valid_registries):
+                with reg_cols[idx]:
+                    st.markdown(f"""
+                    <div style='
+                        text-align: center;
+                        padding: 20px;
+                        border: 1px solid #ddd;
+                        border-radius: 10px;
+                        background-color: #f9f9f9;
+                    '>
+                        <h3>{registry['name']}</h3>
+                        <a href='{registry['url']}' target='_blank' style='
+                            text-decoration: none;
+                            background-color: #4CAF50;
+                            color: white;
+                            padding: 10px 20px;
+                            border-radius: 5px;
+                            display: inline-block;
+                            margin-top: 10px;
+                        '>View Registry</a>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+            st.markdown("---")
     
     # Additional Information
-    if st.secrets['event'].get('additional_info'):
-        st.header(":material/info: Additional Information")
-        
-        for info_item in st.secrets['event']['additional_info']:
-            with st.expander(info_item['title']):
-                st.write(info_item['content'])
-        
-        st.markdown("---")
+    additional_info = st.secrets['event'].get('additional_info')
+    if additional_info:
+        # Filter out items with empty title or content
+        valid_info = [
+            item for item in additional_info
+            if item.get('title', '').strip() and item.get('content', '').strip()
+        ]
+
+        if valid_info:
+            st.header(":material/info: Additional Information")
+
+            for info_item in valid_info:
+                with st.expander(info_item['title']):
+                    st.write(info_item['content'])
+
+            st.markdown("---")
     
     # Contact Information
     if st.secrets['event'].get('contact'):
@@ -225,24 +239,24 @@ def event_info_page():
         if contact.get('bride'):
             with contact_col1:
                 st.subheader(contact['bride']['name'])
-                if contact['bride'].get('email'):
-                    st.write(f"📧 {contact['bride']['email']}")
                 if contact['bride'].get('phone'):
-                    st.write(f"📱 {contact['bride']['phone']}")
-        
+                    st.write(f":material/phone: {contact['bride']['phone']}")
+                if contact['bride'].get('email'):
+                    st.write(f":material/email: {contact['bride']['email']}")
+
         if contact.get('groom'):
             with contact_col2:
                 st.subheader(contact['groom']['name'])
                 if contact['groom'].get('email'):
-                    st.write(f"📧 {contact['groom']['email']}")
+                    st.write(f":material/phone: {contact['groom']['email']}")
                 if contact['groom'].get('phone'):
-                    st.write(f"📱 {contact['groom']['phone']}")
+                    st.write(f":material/email: {contact['groom']['phone']}")
     
     # Footer
     st.markdown("---")
     st.markdown(
         "<div style='text-align: center; color: #666; padding: 20px;'>"
-        f"We can't wait to celebrate with you! 💕<br>"
+        f"We can't wait to celebrate with you! :material/favorite:<br>"
         f"{st.secrets['wedding']['wedding_couple']}"
         "</div>",
         unsafe_allow_html=True
