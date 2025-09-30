@@ -189,7 +189,7 @@ def rsvp_form_page():
     """Main RSVP form page"""
     col1, col2 = st.columns(COLUMN_RATIO_HEADER)
     with col1:
-        st.subheader(f"{st.secrets['wedding']['wedding_couple']} Wedding RSVP")
+        st.header(f"{st.secrets['wedding']['wedding_couple']} Wedding RSVP")
         st.write(st.secrets["ui"]["welcome_message"])
 
         # Check deadline status and display countdown/warning

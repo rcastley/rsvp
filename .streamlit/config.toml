@@ -12,6 +12,11 @@ family="noto-sans"
 url="app/static/NotoSans-VariableFont_wdth,wght.ttf"
 style="bold"
 weight=700
+[[theme.fontFaces]]
+family="dancing-script"
+url="app/static/DancingScript-VariableFont_wght.ttf"
+style="medium"
+weight=500
 
 [theme]
 base = "light"
@@ -23,6 +28,7 @@ baseRadius = "medium"
 showWidgetBorder = true
 baseFontSize = 11
 font="noto-sans"
+headingFont="dancing-script"
 
 [theme.sidebar]
 backgroundColor="ghostWhite"

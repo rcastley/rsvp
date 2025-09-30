@@ -156,7 +156,7 @@ def event_info_page():
 
             if has_mains:
                 with menu_col2:
-                    st.subheader(":material/dinner_dining: Main Courses")
+                    st.subheader(":material/hand_meal: Main Courses")
                     for item in mains_detailed:
                         if isinstance(item, dict):
                             if item.get('name', '').strip():
