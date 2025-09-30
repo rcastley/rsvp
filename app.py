@@ -18,6 +18,7 @@ from utils import (
 st.set_page_config(
     page_title=st.secrets["wedding"]["page_title"],
     page_icon=st.secrets["wedding"]["page_icon"],
+    initial_sidebar_state="collapsed",
     #layout="wide"
 )
 
@@ -389,6 +390,13 @@ def main():
         _run_public_navigation()
 
 def _run_admin_navigation():
+    st.set_page_config(
+        page_title=st.secrets["wedding"]["page_title"],
+        page_icon=st.secrets["wedding"]["page_icon"],
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
+
     """Admin navigation - sidebar only with admin pages"""
     # Define admin pages
     admin_pages = [

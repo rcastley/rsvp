@@ -88,22 +88,8 @@ def admin_summary_page():
                 time_remaining = get_time_until_deadline()
                 formatted_time = format_time_remaining(time_remaining)
                 st.success(f":material/schedule: **Deadline is active**")
-                st.write(f"Deadline: {deadline.strftime('%B %d, %Y at %I:%M %p %Z')}")
-
-                # Create countdown display
-                with st.container():
-                    st.markdown(f"""
-                    <div style="
-                        background: linear-gradient(90deg, #4CAF50, #45a049);
-                        padding: 10px;
-                        border-radius: 5px;
-                        text-align: center;
-                        color: white;
-                        margin: 5px 0;
-                    ">
-                        <h4>:material/clock: Time Remaining: {formatted_time}</h4>
-                    </div>
-                    """, unsafe_allow_html=True)
+                st.info(f"Deadline: {deadline.strftime('%B %d, %Y at %I:%M %p %Z')}")
+                st.warning(f"Time remaining: {formatted_time}")
 
         with col2:
             # Deadline configuration display
@@ -142,13 +128,13 @@ def admin_summary_page():
             st.metric("Total Guests", total_guests)
         
         # Attendance breakdown
-        if total_contacts > 0:
-            st.subheader("Response Breakdown")
-            attendance_data = {
-                'Response': ['Attending', 'Not Attending'],
-                'Count': [attending_contacts, not_attending_contacts]
-            }
-            st.bar_chart(pd.DataFrame(attendance_data).set_index('Response'))
+        # if total_contacts > 0:
+        #     st.subheader("Response Breakdown")
+        #     attendance_data = {
+        #         'Response': ['Attending', 'Not Attending'],
+        #         'Count': [attending_contacts, not_attending_contacts]
+        #     }
+        #     st.bar_chart(pd.DataFrame(attendance_data).set_index('Response'))
         
         # Recent RSVPs
         st.subheader("Recent RSVPs")
