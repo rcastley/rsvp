@@ -1,0 +1,162 @@
+import streamlit as st
+import toml
+import os
+from datetime import datetime
+
+def admin_settings_page():
+    """Admin settings page for editing secrets.toml"""
+    if not st.session_state.get('authenticated', False):
+        st.error(":material/lock: Please log in to access this page.")
+        st.stop()
+
+    st.title(":material/settings: Settings Configuration")
+    st.info(":material/info: Edit your secrets.toml configuration below. Changes require app restart to take effect.")
+
+    # Path to secrets file
+    secrets_path = os.path.join(".streamlit", "secrets.toml")
+
+    if not os.path.exists(secrets_path):
+        st.error(f":material/error: secrets.toml file not found at {secrets_path}")
+        return
+
+    # Load current secrets
+    with open(secrets_path, 'r') as f:
+        secrets = toml.load(f)
+
+    # Initialize session state for edited values
+    if 'edited_secrets' not in st.session_state:
+        st.session_state.edited_secrets = secrets.copy()
+
+    def render_value(key_path, value, parent_dict):
+        """Recursively render form fields based on value type"""
+        full_key = "_".join(key_path)
+
+        if isinstance(value, dict):
+            # Render as expander for nested dicts
+            with st.expander(f"📁 {key_path[-1]}", expanded=True):
+                for k, v in value.items():
+                    render_value(key_path + [k], v, value)
+
+        elif isinstance(value, list):
+            st.markdown(f"**{key_path[-1]}** (List)")
+
+            # Display existing items
+            for i, item in enumerate(value):
+                col1, col2 = st.columns([5, 1])
+                with col1:
+                    if isinstance(item, dict):
+                        # For list of dicts, render as nested structure
+                        with st.container(border=True):
+                            st.markdown(f"*Item {i+1}*")
+                            for k, v in item.items():
+                                render_value(key_path + [str(i), k], v, item)
+                    else:
+                        # Simple list item
+                        new_val = st.text_input(
+                            f"{key_path[-1]} [{i+1}]",
+                            value=str(item),
+                            key=f"{full_key}_{i}",
+                            label_visibility="collapsed"
+                        )
+                        if new_val != str(item):
+                            value[i] = new_val
+                with col2:
+                    if st.button("🗑️", key=f"delete_{full_key}_{i}"):
+                        value.pop(i)
+                        update_nested_dict(st.session_state.edited_secrets, key_path, value)
+                        st.rerun()
+
+            # Add new item button (only for simple lists, not list of dicts)
+            if not value or not isinstance(value[0], dict):
+                new_item = st.text_input(
+                    f"Add new {key_path[-1]}",
+                    key=f"new_{full_key}",
+                    placeholder=f"Enter new {key_path[-1]}"
+                )
+                if st.button(f"➕ Add to {key_path[-1]}", key=f"add_{full_key}"):
+                    if new_item.strip():
+                        value.append(new_item)
+                        update_nested_dict(st.session_state.edited_secrets, key_path, value)
+                        st.rerun()
+
+        elif isinstance(value, bool):
+            new_val = st.checkbox(
+                key_path[-1],
+                value=value,
+                key=full_key
+            )
+            if new_val != value:
+                parent_dict[key_path[-1]] = new_val
+
+        elif isinstance(value, (int, float)):
+            new_val = st.number_input(
+                key_path[-1],
+                value=value,
+                key=full_key
+            )
+            if new_val != value:
+                parent_dict[key_path[-1]] = new_val
+
+        else:
+            # String value - use text_area for long strings, text_input for short
+            str_value = str(value)
+            if len(str_value) > 100 or '\n' in str_value:
+                new_val = st.text_area(
+                    key_path[-1],
+                    value=str_value,
+                    key=full_key,
+                    height=100
+                )
+            else:
+                new_val = st.text_input(
+                    key_path[-1],
+                    value=str_value,
+                    key=full_key
+                )
+
+            if new_val != str_value:
+                parent_dict[key_path[-1]] = new_val
+
+    def update_nested_dict(d, key_path, value):
+        """Update a nested dictionary given a key path"""
+        for key in key_path[:-1]:
+            d = d[key]
+        d[key_path[-1]] = value
+
+    # Render all sections
+    for section_key, section_value in secrets.items():
+        st.subheader(f"📋 {section_key.upper()}")
+        render_value([section_key], section_value, secrets)
+        st.markdown("---")
+
+    # Save button
+    col1, col2 = st.columns([1, 4])
+    with col1:
+        if st.button(":material/save: Save All Changes", type="primary", use_container_width=True):
+            try:
+                # Create backup
+                backup_path = secrets_path + f".backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                with open(secrets_path, 'r') as f:
+                    backup_content = f.read()
+                with open(backup_path, 'w') as f:
+                    f.write(backup_content)
+
+                # Write updated secrets
+                with open(secrets_path, 'w') as f:
+                    toml.dump(secrets, f)
+
+                st.success(f":material/check_circle: Settings saved! Backup created at {backup_path}")
+                st.info(":material/restart_alt: **Important:** Restart the Streamlit app for changes to take effect.")
+
+                # Clear the edited state
+                if 'edited_secrets' in st.session_state:
+                    del st.session_state.edited_secrets
+
+            except Exception as e:
+                st.error(f":material/error: Error saving settings: {str(e)}")
+
+    with col2:
+        if st.button(":material/refresh: Reload from File", use_container_width=True):
+            if 'edited_secrets' in st.session_state:
+                del st.session_state.edited_secrets
+            st.rerun()

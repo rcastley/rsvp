@@ -23,6 +23,10 @@ def save_rsvp(rsvp_data):
     df = pd.concat([df, new_df], ignore_index=True)
     df.to_csv(CSV_FILE, index=False)
 
+def save_rsvps(df):
+    """Save entire RSVP dataframe to CSV file"""
+    df.to_csv(CSV_FILE, index=False)
+
 # Deadline utility functions
 def get_deadline_datetime():
     """Get the deadline datetime from secrets configuration"""

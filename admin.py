@@ -2,10 +2,12 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 import time
+import toml
+import os
 
 # Import shared utilities
 from utils import (
-    load_rsvps, get_deadline_datetime, is_past_deadline,
+    load_rsvps, save_rsvps, get_deadline_datetime, is_past_deadline,
     get_time_until_deadline, format_time_remaining
 )
 
@@ -284,7 +286,7 @@ def admin_data_page():
         # Display data table
         st.subheader(":material/table_view: Complete RSVP Data")
         if not filtered_df.empty:
-            st.dataframe(
+            edited_df = st.data_editor(
                 filtered_df,
                 width="content",
                 column_config={
@@ -301,8 +303,22 @@ def admin_data_page():
                     "comments": "Comments"
                 }
             )
-            
+
             st.write(f"Showing {len(filtered_df)} of {len(df)} total responses")
+
+            # Save button to persist changes
+            if st.button(":material/save: Save Changes", type="primary"):
+                # Update the original dataframe with edited values
+                if search_term:
+                    # If filtered, update only the filtered rows in the original df
+                    df.update(edited_df)
+                else:
+                    # If not filtered, replace the entire dataframe
+                    df = edited_df
+
+                save_rsvps(df)
+                st.success(":material/check_circle: Changes saved successfully!")
+                st.rerun()
         else:
             st.write("No data matches your search criteria.")
     else:
