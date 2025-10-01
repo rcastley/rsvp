@@ -398,7 +398,6 @@ def _run_admin_navigation():
         initial_sidebar_state="expanded"
     )
 
-    """Admin navigation - sidebar only with admin pages"""
     # Define admin pages
     admin_pages = [
         st.Page(admin_summary_page, title="Summary", icon=":material/bar_chart:", default=True),
