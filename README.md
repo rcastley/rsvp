@@ -58,7 +58,7 @@ A Streamlit-based web application for managing wedding RSVPs with menu selection
 
    See `.streamlit/secrets.toml.example` for a complete configuration template with all available options.
 
-   **Note:** After the initial setup, you can edit most settings through the Admin Settings page in the web interface (see below).
+   **Note:** After the initial setup, you can edit all settings (including secrets.toml) through the Admin Settings page in the web interface (see below).
 
 ## Running the Application
 
@@ -79,16 +79,17 @@ A Streamlit-based web application for managing wedding RSVPs with menu selection
      - **Summary** - View RSVP statistics, attendance charts, and dietary requirements
      - **Menu Planning** - See menu choice counts and meal planning totals
      - **Data Export** - Search, filter, and export RSVP data to CSV
-     - **Settings** - Edit configuration settings through a web interface (no need to manually edit TOML files)
+     - **Settings** - Edit all configuration settings through a web interface, including secrets.toml (no need to manually edit TOML files)
 
 ## Using the Admin Settings Page
 
-The Admin Settings page allows you to modify your wedding configuration without editing files directly:
+The Admin Settings page allows you to modify your wedding configuration (secrets.toml) without editing files directly:
 
 1. Log in to the admin dashboard
 2. Navigate to "Settings" from the sidebar
 3. Edit any configuration values:
    - Wedding details (couple names, page title, banner)
+   - Admin password
    - Menu options (add/remove/edit menu items and descriptions)
    - RSVP deadline and grace periods
    - Event information (venues, timeline, accommodations)
@@ -96,4 +97,4 @@ The Admin Settings page allows you to modify your wedding configuration without 
 4. Click "Save All Changes" to apply
 5. Restart the Streamlit app for changes to take effect
 
-**Note:** The Settings page automatically creates a timestamped backup before saving changes.
+**Note:** The Settings page automatically creates a timestamped backup of secrets.toml before saving changes.
