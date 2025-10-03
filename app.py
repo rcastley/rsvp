@@ -78,8 +78,8 @@ def reset_form():
     # Add guest-specific fields
     for i in range(MAX_GUESTS_FOR_CLEANUP):
         form_keys.extend([
-            f"guest_name_{i}", f"starter_{i}", f"main_{i}",
-            f"dessert_{i}", f"dietary_{i}"
+            f"guest_first_name_{i}", f"guest_last_name_{i}",
+            f"starter_{i}", f"main_{i}", f"dessert_{i}", f"dietary_{i}"
         ])
 
     # Remove the keys from session state
@@ -115,13 +115,16 @@ def process_submission():
     
     if form_data.get('attending') == "Yes, I/we will attend":
         for i, _ in enumerate(st.session_state.guests):
-            guest_name = form_data.get(f"guest_name_{i}", "")
+            guest_first_name = form_data.get(f"guest_first_name_{i}", "")
+            guest_last_name = form_data.get(f"guest_last_name_{i}", "")
             starter = form_data.get(f"starter_{i}", "")
             main = form_data.get(f"main_{i}", "")
             dessert = form_data.get(f"dessert_{i}", "")
-            
-            if not guest_name.strip():
-                errors.append(f"Guest {i + 1} name is required")
+
+            if not guest_first_name.strip():
+                errors.append(f"Guest {i + 1} first name is required")
+            if not guest_last_name.strip():
+                errors.append(f"Guest {i + 1} last name is required")
             if not starter:
                 errors.append(f"Guest {i + 1} starter choice is required")
             if not main:
@@ -151,7 +154,8 @@ def process_submission():
                     "contact_email": form_data.get('contact_email', ''),
                     "contact_phone": form_data.get('contact_phone', ''),
                     "attending": "Yes",
-                    "guest_name": form_data.get(f"guest_name_{i}", ""),
+                    "guest_first_name": form_data.get(f"guest_first_name_{i}", ""),
+                    "guest_last_name": form_data.get(f"guest_last_name_{i}", ""),
                     "starter_choice": form_data.get(f"starter_{i}", ""),
                     "main_choice": form_data.get(f"main_{i}", ""),
                     "dessert_choice": form_data.get(f"dessert_{i}", ""),
@@ -167,7 +171,8 @@ def process_submission():
                 "contact_email": form_data.get('contact_email', ''),
                 "contact_phone": form_data.get('contact_phone', ''),
                 "attending": "No",
-                "guest_name": "",
+                "guest_first_name": "",
+                "guest_last_name": "",
                 "starter_choice": "",
                 "main_choice": "",
                 "dessert_choice": "",
@@ -294,11 +299,19 @@ def rsvp_form_page():
                 guest_col1, guest_col2 = st.columns(COLUMN_RATIO_GUEST)
 
                 with guest_col1:
-                    st.text_input(
-                        f"Guest Name*",
-                        key=f"guest_name_{i}",
-                        placeholder="Enter guest name"
-                    )
+                    name_col1, name_col2 = st.columns(2)
+                    with name_col1:
+                        st.text_input(
+                            f"First Name*",
+                            key=f"guest_first_name_{i}",
+                            placeholder="First name"
+                        )
+                    with name_col2:
+                        st.text_input(
+                            f"Last Name*",
+                            key=f"guest_last_name_{i}",
+                            placeholder="Last name"
+                        )
 
                 with guest_col2:
                     if i > 0:  # Don't show remove button for first guest
@@ -369,7 +382,8 @@ def rsvp_form_page():
         
         # Store guest data
         for i, _ in enumerate(st.session_state.guests):
-            st.session_state.form_data[f"guest_name_{i}"] = st.session_state.get(f"guest_name_{i}", "")
+            st.session_state.form_data[f"guest_first_name_{i}"] = st.session_state.get(f"guest_first_name_{i}", "")
+            st.session_state.form_data[f"guest_last_name_{i}"] = st.session_state.get(f"guest_last_name_{i}", "")
             st.session_state.form_data[f"starter_{i}"] = st.session_state.get(f"starter_{i}", "")
             st.session_state.form_data[f"main_{i}"] = st.session_state.get(f"main_{i}", "")
             st.session_state.form_data[f"dessert_{i}"] = st.session_state.get(f"dessert_{i}", "")

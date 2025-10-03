@@ -29,18 +29,23 @@ def admin_settings_page():
         if 'edited_secrets' not in st.session_state:
             st.session_state.edited_secrets = secrets.copy()
 
+        def format_label(key):
+            """Format a key by removing underscores and capitalizing words"""
+            return key.replace('_', ' ').title()
+
         def render_value(key_path, value, parent_dict):
             """Recursively render form fields based on value type"""
             full_key = "_".join(key_path)
+            display_label = format_label(key_path[-1])
 
             if isinstance(value, dict):
                 # Render as expander for nested dicts
-                with st.expander(f":material/key: {key_path[-1]}", expanded=True):
+                with st.expander(f":material/key: {display_label}", expanded=True):
                     for k, v in value.items():
                         render_value(key_path + [k], v, value)
 
             elif isinstance(value, list):
-                st.markdown(f"**{key_path[-1]}** (List)")
+                st.markdown(f"**{display_label}** (List)")
 
                 # Display existing items
                 for i, item in enumerate(value):
@@ -55,7 +60,7 @@ def admin_settings_page():
                         else:
                             # Simple list item
                             new_val = st.text_input(
-                                f"{key_path[-1]} [{i+1}]",
+                                f"{display_label} [{i+1}]",
                                 value=str(item),
                                 key=f"{full_key}_{i}",
                                 label_visibility="collapsed"
@@ -71,11 +76,11 @@ def admin_settings_page():
                 # Add new item button (only for simple lists, not list of dicts)
                 if not value or not isinstance(value[0], dict):
                     new_item = st.text_input(
-                        f"Add new {key_path[-1]}",
+                        f"Add new {display_label}",
                         key=f"new_{full_key}",
-                        placeholder=f"Enter new {key_path[-1]}"
+                        placeholder=f"Enter new {display_label}"
                     )
-                    if st.button(f":material/add: Add to {key_path[-1]}", key=f"add_{full_key}"):
+                    if st.button(f":material/add: Add to {display_label}", key=f"add_{full_key}"):
                         if new_item.strip():
                             value.append(new_item)
                             update_nested_dict(st.session_state.edited_secrets, key_path, value)
@@ -83,7 +88,7 @@ def admin_settings_page():
 
             elif isinstance(value, bool):
                 new_val = st.checkbox(
-                    key_path[-1],
+                    display_label,
                     value=value,
                     key=full_key
                 )
@@ -92,7 +97,7 @@ def admin_settings_page():
 
             elif isinstance(value, (int, float)):
                 new_val = st.number_input(
-                    key_path[-1],
+                    display_label,
                     value=value,
                     key=full_key
                 )
@@ -104,14 +109,14 @@ def admin_settings_page():
                 str_value = str(value)
                 if len(str_value) > 100 or '\n' in str_value:
                     new_val = st.text_area(
-                        key_path[-1],
+                        display_label,
                         value=str_value,
                         key=full_key,
                         height=100
                     )
                 else:
                     new_val = st.text_input(
-                        key_path[-1],
+                        display_label,
                         value=str_value,
                         key=full_key
                     )
@@ -125,11 +130,12 @@ def admin_settings_page():
                 d = d[key]
             d[key_path[-1]] = value
 
-        # Render all sections
-        for section_key, section_value in secrets.items():
-            st.write(f":material/folder: **{section_key.upper()}**")
-            render_value([section_key], section_value, secrets)
-            #st.markdown("---")
+        # Render all sections as tabs
+        section_tabs = st.tabs([format_label(key) for key in secrets.keys()])
+
+        for tab, (section_key, section_value) in zip(section_tabs, secrets.items()):
+            with tab:
+                render_value([section_key], section_value, secrets)
 
         # Save button
         col1, col2, col3 = st.columns([1, 1, 4])

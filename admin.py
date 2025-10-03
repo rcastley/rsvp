@@ -63,13 +63,11 @@ def admin_summary_page():
         st.success(":material/target: Successfully accessed RSVP Summary Dashboard!")
         st.session_state.just_logged_in = False  # Reset the flag
     
-    st.title(":material/bar_chart: RSVP Summary")
+    st.title(f":material/bar_chart: RSVP Summary: (Time Zone: ({st.secrets['deadline'].get('timezone', 'UTC')})")
 
     # Display deadline status
     deadline = get_deadline_datetime()
     if deadline:
-        st.subheader(":material/schedule: RSVP Deadline Status")
-
         col1, col2 = st.columns(2)
 
         with col1:
@@ -90,8 +88,8 @@ def admin_summary_page():
                 time_remaining = get_time_until_deadline()
                 formatted_time = format_time_remaining(time_remaining)
                 st.success(f":material/schedule: **Deadline is active**")
-                st.info(f"Deadline: {deadline.strftime('%B %d, %Y at %I:%M %p %Z')}")
-                st.warning(f"Time remaining: {formatted_time}")
+                st.error(f"Deadline: {deadline.strftime('%B %d, %Y at %I:%M %p %Z')}")
+                st.info(f"Time remaining: {formatted_time}")
 
         with col2:
             # Deadline configuration display
@@ -99,9 +97,8 @@ def admin_summary_page():
             warning_days = st.secrets["deadline"].get("warning_days", 7)
             grace_hours = st.secrets["deadline"].get("grace_period_hours", 24)
 
-            st.write(f"• Warning period: {warning_days} days before deadline")
-            st.write(f"• Grace period: {grace_hours} hours after deadline")
-            st.write(f"• Timezone: {st.secrets['deadline'].get('timezone', 'UTC')}")
+            st.warning(f"Warning period: {warning_days} days before deadline")
+            st.warning(f"Grace period: {grace_hours} hours after deadline")
 
         st.markdown("---")
 
@@ -110,7 +107,7 @@ def admin_summary_page():
     
     if not df.empty:
         # Summary statistics
-        st.header("RSVP Overview")
+        st.write("**RSVP Overview**")
         
         # Main metrics
         col1, col2, col3, col4 = st.columns(4)
@@ -139,25 +136,30 @@ def admin_summary_page():
         #     st.bar_chart(pd.DataFrame(attendance_data).set_index('Response'))
         
         # Recent RSVPs
-        st.subheader("Recent RSVPs")
+        #st.subheader("Recent RSVPs")
         recent_df = df.sort_values('timestamp', ascending=False).head(10)
-        
+        st.divider()
         for _, row in recent_df.iterrows():
             with st.container():
                 col1, col2, col3 = st.columns([2, 1, 1])
                 with col1:
                     st.write(f"**{row['contact_name']}**")
-                    if row['attending'] == 'Yes' and row['guest_name']:
-                        st.write(f"Guest: {row['guest_name']}")
+                    if row['attending'] == 'Yes' and (row.get('guest_first_name') or row.get('guest_last_name')):
+                        guest_name = f"{row.get('guest_first_name', '')} {row.get('guest_last_name', '')}".strip()
+                        st.write(f":material/person: {guest_name}")
                 with col2:
                     status_color = ":material/check_circle:" if row['attending'] == 'Yes' else ":material/cancel:"
                     st.write(f"{status_color} {row['attending']}")
+                    
+                    # Fixed comments handling
+                    if pd.notna(row['comments']) and str(row['comments']).strip():
+                        st.write(f":material/chat_bubble: _{row['comments']}_")
+                    else:
+                        st.write(":material/chat_bubble_outline: No comments")
+                        
                 with col3:
-                    st.write(f"*{row['timestamp'].split()[0]}*")  # Just the date
-                
-                if row['comments']:
-                    st.write(f":material/chat_bubble: {row['comments']}")
-                
+                    st.write(f":material/date_range: *{row['timestamp'].split()[0]}*")  # Just the date
+
                 st.markdown("---")
     else:
         st.info(":material/inbox: No RSVPs have been submitted yet.")
@@ -226,7 +228,8 @@ def admin_menu_page():
         
         if not dietary_df.empty:
             for _, row in dietary_df.iterrows():
-                st.write(f"**{row['guest_name']}:** {row['dietary_requirements']}")
+                guest_name = f"{row.get('guest_first_name', '')} {row.get('guest_last_name', '')}".strip()
+                st.write(f"**{guest_name}:** {row['dietary_requirements']}")
         else:
             st.write("No special dietary requirements reported.")
     else:
@@ -248,7 +251,7 @@ def admin_data_page():
     
     if not df.empty:
         # Export functionality
-        st.subheader(":material/download: Export Data")
+        st.write("**:material/download: Export Data**")
         col1, col2 = st.columns(2)
         
         with col1:
@@ -273,18 +276,19 @@ def admin_data_page():
                 )
         
         # Search and filter
-        st.subheader(":material/search: Search & Filter")
+        st.write("**:material/search: Search & Filter**")
         search_term = st.text_input("Search by contact name or guest name:")
         
         filtered_df = df
         if search_term:
             filtered_df = df[
                 df['contact_name'].str.contains(search_term, case=False, na=False) |
-                df['guest_name'].str.contains(search_term, case=False, na=False)
+                df['guest_first_name'].str.contains(search_term, case=False, na=False) |
+                df['guest_last_name'].str.contains(search_term, case=False, na=False)
             ]
         
         # Display data table
-        st.subheader(":material/table_view: Complete RSVP Data")
+        st.write("**:material/table_view: Complete RSVP Data**")
         if not filtered_df.empty:
             edited_df = st.data_editor(
                 filtered_df,
@@ -295,7 +299,8 @@ def admin_data_page():
                     "contact_email": "Email",
                     "contact_phone": "Phone",
                     "attending": "Status",
-                    "guest_name": "Guest",
+                    "guest_first_name": "First Name",
+                    "guest_last_name": "Last Name",
                     "starter_choice": "Starter",
                     "main_choice": "Main",
                     "dessert_choice": "Dessert",

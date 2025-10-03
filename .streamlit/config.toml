@@ -20,15 +20,16 @@ weight=500
 
 [theme]
 base = "light"
-primaryColor="slateBlue"
+primaryColor="#6200EE"
 backgroundColor="white"
-secondaryBackgroundColor="lavender"
+secondaryBackgroundColor="#D1C4E9"
 codeBackgroundColor="powderBlue"
 baseRadius = "medium"
 showWidgetBorder = true
 baseFontSize = 11
 font="noto-sans"
 headingFont="dancing-script"
+blueColor="#3700B3"
 
 [theme.sidebar]
 backgroundColor="ghostWhite"

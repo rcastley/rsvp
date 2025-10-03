@@ -13,11 +13,11 @@ def event_info_page():
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("Wedding Date")
+        st.write("**Wedding Date**")
         st.write(st.secrets['event']['wedding_date'])
         
     with col2:
-        st.subheader("Ceremony Time")
+        st.write("**Ceremony Time**")
         st.write(st.secrets['event']['ceremony_time'])
     
     st.markdown("---")
@@ -29,7 +29,7 @@ def event_info_page():
         ceremony_col1, ceremony_col2 = st.columns([2, 1])
         
         with ceremony_col1:
-            st.subheader(st.secrets['event']['ceremony_venue_name'])
+            st.write(f"**{st.secrets['event']['ceremony_venue_name']}**")
             st.write(st.secrets['event']['ceremony_venue_address'])
             
             if st.secrets['event'].get('ceremony_venue_description'):
@@ -62,11 +62,10 @@ def event_info_page():
     venue_col1, venue_col2 = st.columns([2, 1])
     
     with venue_col1:
-        st.subheader(st.secrets['event']['venue_name'])
+        st.write(f"**{st.secrets['event']['venue_name']}**")
         st.write(st.secrets['event']['venue_address'])
         
         if st.secrets['event'].get('venue_description'):
-            st.write("")
             st.write(st.secrets['event']['venue_description'])
         
         # Add map if URL provided
@@ -86,24 +85,6 @@ def event_info_page():
             zoom=15,
             size=20
         )
-    
-    st.markdown("---")
-    
-    # Timeline
-    st.header(":material/schedule: Timeline")
-    
-    timeline_items = st.secrets['event'].get('timeline', [])
-    if timeline_items:
-        for item in timeline_items:
-            with st.container():
-                time_col, event_col = st.columns([1, 3])
-                with time_col:
-                    st.markdown(f"**{item['time']}**")
-                with event_col:
-                    st.write(item['event'])
-                    if item.get('description'):
-                        st.caption(item['description'])
-        st.markdown("")
     
     st.markdown("---")
 
@@ -186,6 +167,23 @@ def event_info_page():
 
             st.markdown("---")
 
+    st.header(":material/schedule: Timeline")
+    
+    timeline_items = st.secrets['event'].get('timeline', [])
+    if timeline_items:
+        for item in timeline_items:
+            with st.container():
+                time_col, event_col = st.columns([1, 3])
+                with time_col:
+                    st.markdown(f"**{item['time']}**")
+                with event_col:
+                    st.write(item['event'])
+                    if item.get('description'):
+                        st.caption(item['description'])
+        st.markdown("")
+    
+    st.markdown("---")
+
     # Accommodations
     if st.secrets['event'].get('accommodations'):
         st.header(":material/hotel: Accommodations")
@@ -222,15 +220,15 @@ def event_info_page():
         transport_info = st.secrets['event']['transportation']
         
         if transport_info.get('parking'):
-            st.subheader("Parking")
+            st.write("**Parking**")
             st.write(transport_info['parking'])
         
         if transport_info.get('public_transport'):
-            st.subheader("Public Transportation")
+            st.write("**Public Transportation**")
             st.write(transport_info['public_transport'])
         
         if transport_info.get('taxi_info'):
-            st.subheader("Taxi Services")
+            st.write("**Taxi Services**")
             st.write(transport_info['taxi_info'])
         
         st.markdown("---")
@@ -317,7 +315,7 @@ def event_info_page():
         
         if contact.get('bride'):
             with contact_col1:
-                st.subheader(contact['bride']['name'])
+                st.write(f"**{contact['bride']['name']}**")
                 if contact['bride'].get('phone'):
                     st.write(f":material/phone: {contact['bride']['phone']}")
                 if contact['bride'].get('email'):
@@ -325,18 +323,18 @@ def event_info_page():
 
         if contact.get('groom'):
             with contact_col2:
-                st.subheader(contact['groom']['name'])
+                st.write(f"**{contact['groom']['name']}**")
                 if contact['groom'].get('email'):
-                    st.write(f":material/phone: {contact['groom']['email']}")
+                    st.write(f":material/phone: {contact['groom']['phone']}")
                 if contact['groom'].get('phone'):
-                    st.write(f":material/email: {contact['groom']['phone']}")
+                    st.write(f":material/email: {contact['groom']['email']}")
     
     # Footer
-    st.markdown("---")
-    st.markdown(
-        "<div style='text-align: center; color: #666; padding: 20px;'>"
-        f"We can't wait to celebrate with you! :material/favorite:<br>"
-        f"{st.secrets['wedding']['wedding_couple']}"
-        "</div>",
-        unsafe_allow_html=True
-    )
+    # st.markdown("---")
+    # st.markdown(
+    #     "<div style='text-align: center; color: #666; padding: 20px;'>"
+    #     f"We can't wait to celebrate with you! :material/favorite:<br>"
+    #     f"{st.secrets['wedding']['wedding_couple']}"
+    #     "</div>",
+    #     unsafe_allow_html=True
+    # )
