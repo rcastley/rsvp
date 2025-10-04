@@ -169,7 +169,7 @@ def event_info_page():
 
     st.header(":material/schedule: Timeline")
     
-    timeline_items = st.secrets['event'].get('timeline', [])
+    timeline_items = st.secrets.get('timeline', [])
     if timeline_items:
         for item in timeline_items:
             with st.container():
@@ -184,13 +184,13 @@ def event_info_page():
     
     st.markdown("---")
 
-    # Accommodations
-    if st.secrets['event'].get('accommodations'):
+    accommodations_items = st.secrets.get('accommodations', [])
+    if accommodations_items:
         st.header(":material/hotel: Accommodations")
-        st.write(st.secrets['event'].get('accommodations_intro', 
+        st.write(st.secrets['event'].get('accommodations_intro',
                  'We have reserved room blocks at the following hotels:'))
-        
-        accommodations = st.secrets['event']['accommodations']
+
+        accommodations = st.secrets['accommodations']
         
         for hotel in accommodations:
             with st.expander(f":material/hotel: {hotel['name']}", expanded=False):
@@ -304,10 +304,10 @@ def event_info_page():
             st.markdown("---")
     
     # Contact Information
-    if st.secrets['event'].get('contact'):
+    if st.secrets.get('contact'):
         st.header(":material/contact_mail: Questions?")
-        
-        contact = st.secrets['event']['contact']
+
+        contact = st.secrets['contact']
         
         st.write("If you have any questions, please don't hesitate to reach out:")
         
