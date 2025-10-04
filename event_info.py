@@ -3,7 +3,7 @@ import streamlit as st
 def event_info_page():
     """Event information page showing venue, timeline, and guest information"""
     
-    st.title(f":material/celebration: {st.secrets['wedding']['wedding_couple']} Wedding")
+    st.title(f":material/celebration: The Wedding of {st.secrets['wedding']['wedding_couple']}")
     st.write(st.secrets['event']['welcome_text'])
     
     st.markdown("---")
@@ -24,7 +24,7 @@ def event_info_page():
     
     # Ceremony Venue (Church)
     if st.secrets['event'].get('ceremony_venue_name'):
-        st.header(":material/church: Ceremony Venue")
+        st.header(":material/church: Wedding Ceremony")
         
         ceremony_col1, ceremony_col2 = st.columns([2, 1])
         
