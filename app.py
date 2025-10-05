@@ -20,7 +20,7 @@ st.set_page_config(
     page_title=st.secrets["wedding"]["page_title"],
     page_icon=st.secrets["wedding"]["page_icon"],
     initial_sidebar_state="collapsed",
-    #layout="wide"
+    layout="wide"
 )
 
 # Constants
@@ -193,205 +193,211 @@ def process_submission():
 
 def rsvp_form_page():
     """Main RSVP form page"""
-    col1, col2 = st.columns(COLUMN_RATIO_HEADER)
-    with col1:
-        st.header(f"{st.secrets['wedding']['wedding_couple']} Wedding RSVP")
-        st.write(st.secrets["welcome"]["message"])
+    # Create 3-column layout with 2,5,2 ratio - left and right are spacers
+    left_spacer, main_col, right_spacer = st.columns([1, 3, 1])
 
-        # Check deadline status and display countdown/warning
-        deadline = get_deadline_datetime()
-        if deadline:
-            if is_past_deadline():
-                if is_within_grace_period():
-                    st.error(":material/schedule: RSVP deadline has passed, but submissions are still being accepted for a limited time.")
-                    grace_end = deadline + timedelta(hours=st.secrets["deadline"].get("grace_period_hours", 24))
-                    st.warning(f":material/timer: Grace period ends: {grace_end.strftime('%B %d, %Y at %I:%M %p %Z')}")
+    with main_col:
+        col1, col2 = st.columns(COLUMN_RATIO_HEADER)
+        with col1:
+            st.header(f"{st.secrets['wedding']['wedding_couple']} Wedding RSVP")
+            st.write(st.secrets["welcome"]["message"])
+
+            # Check deadline status and display countdown/warning
+            deadline = get_deadline_datetime()
+            if deadline:
+                if is_past_deadline():
+                    if is_within_grace_period():
+                        st.error(":material/schedule: RSVP deadline has passed, but submissions are still being accepted for a limited time.")
+                        grace_end = deadline + timedelta(hours=st.secrets["deadline"].get("grace_period_hours", 24))
+                        st.warning(f":material/timer: Grace period ends: {grace_end.strftime('%B %d, %Y at %I:%M %p %Z')}")
+                    else:
+                        st.error(":material/block: RSVP deadline has passed. New submissions are no longer accepted.")
+                        st.info("Please contact the wedding couple directly if you need to make changes to your RSVP.")
+                        return  # Stop rendering the form
+                elif is_within_warning_period():
+                    time_remaining = get_time_until_deadline()
+                    formatted_time = format_time_remaining(time_remaining)
+
+                    st.warning(f":material/schedule: **RSVP Deadline Approaching!**")
+
+                    # Create a prominent countdown display
+                    with st.container():
+                        st.markdown(f"""
+                        <div style="
+                            background: linear-gradient(90deg, #ff6b6b, #ee5a52);
+                            padding: 15px;
+                            border-radius: 8px;
+                            text-align: center;
+                            color: white;
+                            margin: 10px 0;
+                            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                        ">
+                            <h3>⏰ Time Remaining: {formatted_time}</h3>
+                            <p>Deadline: {deadline.strftime('%B %d, %Y at %I:%M %p %Z')}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
                 else:
-                    st.error(":material/block: RSVP deadline has passed. New submissions are no longer accepted.")
-                    st.info("Please contact the wedding couple directly if you need to make changes to your RSVP.")
-                    return  # Stop rendering the form
-            elif is_within_warning_period():
-                time_remaining = get_time_until_deadline()
-                formatted_time = format_time_remaining(time_remaining)
+                    # Show normal deadline info
+                    time_remaining = get_time_until_deadline()
+                    formatted_time = format_time_remaining(time_remaining)
+                    st.info(f":material/schedule: **RSVP Deadline**:  {deadline.strftime('%B %d, %Y at %I:%M %p')} ({formatted_time} remaining)")
 
-                st.warning(f":material/schedule: **RSVP Deadline Approaching!**")
+        with col2:
+            if st.secrets['wedding'].get('banner_image'):
+                st.image(st.secrets['wedding']['banner_image'])
+        st.markdown("---")
 
-                # Create a prominent countdown display
-                with st.container():
-                    st.markdown(f"""
-                    <div style="
-                        background: linear-gradient(90deg, #ff6b6b, #ee5a52);
-                        padding: 15px;
-                        border-radius: 8px;
-                        text-align: center;
-                        color: white;
-                        margin: 10px 0;
-                        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-                    ">
-                        <h3>⏰ Time Remaining: {formatted_time}</h3>
-                        <p>Deadline: {deadline.strftime('%B %d, %Y at %I:%M %p %Z')}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-            else:
-                # Show normal deadline info
-                time_remaining = get_time_until_deadline()
-                formatted_time = format_time_remaining(time_remaining)
-                st.info(f":material/schedule: **RSVP Deadline**:  {deadline.strftime('%B %d, %Y at %I:%M %p')} ({formatted_time} remaining)")
+        # Initialize session state
+        initialize_session_state()
 
-    with col2:
-        if st.secrets['wedding'].get('banner_image'):
-            st.image(st.secrets['wedding']['banner_image'])
-    st.markdown("---")
-    
-    # Initialize session state
-    initialize_session_state()
-    
-    # Check if form has been successfully submitted
-    if st.session_state.form_submitted:
-        st.success(":material/check_circle: RSVP submitted successfully! Thank you for your response.")
-        st.balloons()
-        
-        # if st.button("Submit Another RSVP", type="primary"):
-        #     reset_form()
-        #     st.rerun()
-        
-        # st.info(":material/lightbulb: If you need to submit another RSVP or make changes, please click the button above.")
-        return
-    
-    # Check if submission is in progress
-    if st.session_state.submission_in_progress:
-        st.info(":material/refresh: Processing your RSVP submission...")
-        with st.spinner("Please wait..."):
-            if process_submission():
-                st.rerun()
-            else:
-                st.rerun()
-        return
-    
-    # RSVP Response
-    st.markdown("**Will you be attending our wedding?**")
-    attending = st.radio(
-        "**Will you be attending our wedding?**",
-        ["Yes, I/we will attend", "No, I/we cannot attend"],
-        key="attending", horizontal=True, label_visibility="collapsed"
-    )
-    
-    # Contact Information
-    st.markdown("**Contact Information**")
-    contact_col1, contact_col2, contact_col3 = st.columns(COLUMN_RATIO_CONTACT)
-    with contact_col1:
-        contact_name = st.text_input("Primary Contact Name*", key="contact_name", width=300)
-    with contact_col2:
-        contact_email = st.text_input("Email Address", key="contact_email", width=350)
-    with contact_col3:
-        contact_phone = st.text_input("Phone Number", key="contact_phone", width=200)
-    
-    if attending == "Yes, I/we will attend":
-        st.markdown("**Guest Details & Menu Choices**")
-        st.write("Please provide details for each guest attending (view the full menu on the [Event Info](/event_info_page) page):")
-        
-        # Display guests
-        for i, _ in enumerate(st.session_state.guests):
-            with st.container(border=True):
-                st.markdown(f"**Guest {i + 1}**")
+        # Check if form has been successfully submitted
+        if st.session_state.form_submitted:
+            st.success(":material/check_circle: RSVP submitted successfully! Thank you for your response.")
+            st.balloons()
 
-                # Create columns for guest details
-                guest_col1, guest_col2 = st.columns(COLUMN_RATIO_GUEST)
+            # if st.button("Submit Another RSVP", type="primary"):
+            #     reset_form()
+            #     st.rerun()
 
-                with guest_col1:
-                    name_col1, name_col2 = st.columns(2)
-                    with name_col1:
-                        st.text_input(
-                            f"First Name*",
-                            key=f"guest_first_name_{i}",
-                            placeholder="First name"
-                        )
-                    with name_col2:
-                        st.text_input(
-                            f"Last Name*",
-                            key=f"guest_last_name_{i}",
-                            placeholder="Last name"
+            # st.info(":material/lightbulb: If you need to submit another RSVP or make changes, please click the button above.")
+            return
+
+        # Check if submission is in progress
+        if st.session_state.submission_in_progress:
+            st.info(":material/refresh: Processing your RSVP submission...")
+            with st.spinner("Please wait..."):
+                if process_submission():
+                    st.rerun()
+                else:
+                    st.rerun()
+            return
+
+        # RSVP Response
+        with st.container(border=True):
+            st.markdown("**Will you be attending our wedding?**")
+            attending = st.radio(
+                "**Will you be attending our wedding?**",
+                ["Yes, I/we will attend", "No, I/we cannot attend"],
+                key="attending", horizontal=True, label_visibility="collapsed"
+            )
+
+        # Contact Information
+        with st.container(border=True):
+            st.markdown("**Contact Information**")
+            contact_col1, contact_col2, contact_col3 = st.columns(COLUMN_RATIO_CONTACT)
+            with contact_col1:
+                contact_name = st.text_input("Primary Contact Name*", key="contact_name", width=300)
+            with contact_col2:
+                contact_email = st.text_input("Email Address", key="contact_email", width=350)
+            with contact_col3:
+                contact_phone = st.text_input("Phone Number", key="contact_phone", width=200)
+
+        if attending == "Yes, I/we will attend":
+            st.markdown("**Guest Details & Menu Choices**")
+            st.write("Please provide details for each guest attending (view the full menu on the [Event Info](/event_info_page) page):")
+
+            # Display guests
+            for i, _ in enumerate(st.session_state.guests):
+                with st.container(border=True):
+                    st.markdown(f"**Guest {i + 1}**")
+
+                    # Create columns for guest details
+                    guest_col1, guest_col2 = st.columns(COLUMN_RATIO_GUEST)
+
+                    with guest_col1:
+                        name_col1, name_col2 = st.columns(2)
+                        with name_col1:
+                            st.text_input(
+                                f"First Name*",
+                                key=f"guest_first_name_{i}",
+                                placeholder="First name"
+                            )
+                        with name_col2:
+                            st.text_input(
+                                f"Last Name*",
+                                key=f"guest_last_name_{i}",
+                                placeholder="Last name"
+                            )
+
+                    with guest_col2:
+                        if i > 0:  # Don't show remove button for first guest
+                            if st.button(f"Remove", key=f"remove_{i}"):
+                                remove_guest(i)
+                                st.rerun()
+
+                    # Menu selections
+                    menu_col1, menu_col2, menu_col3 = st.columns(COLUMN_RATIO_MENU)
+
+                    with menu_col1:
+                        st.selectbox(
+                            "Starter Choice*",
+                            [""] + STARTERS,
+                            key=f"starter_{i}",
+                            index=0
                         )
 
-                with guest_col2:
-                    if i > 0:  # Don't show remove button for first guest
-                        if st.button(f"Remove", key=f"remove_{i}"):
-                            remove_guest(i)
-                            st.rerun()
+                    with menu_col2:
+                        st.selectbox(
+                            "Main Course*",
+                            [""] + MAINS,
+                            key=f"main_{i}",
+                            index=0
+                        )
 
-                # Menu selections
-                menu_col1, menu_col2, menu_col3 = st.columns(COLUMN_RATIO_MENU)
+                    with menu_col3:
+                        st.selectbox(
+                            "Dessert Choice*",
+                            [""] + DESSERTS,
+                            key=f"dessert_{i}",
+                            index=0
+                        )
 
-                with menu_col1:
-                    st.selectbox(
-                        "Starter Choice*",
-                        [""] + STARTERS,
-                        key=f"starter_{i}",
-                        index=0
+                    # Dietary requirements
+                    st.text_area(
+                        "Dietary Requirements/Allergies",
+                        key=f"dietary_{i}",
+                        placeholder="Please list any allergies or dietary requirements",
+                        height=60
                     )
 
-                with menu_col2:
-                    st.selectbox(
-                        "Main Course*",
-                        [""] + MAINS,
-                        key=f"main_{i}",
-                        index=0
-                    )
 
-                with menu_col3:
-                    st.selectbox(
-                        "Dessert Choice*",
-                        [""] + DESSERTS,
-                        key=f"dessert_{i}",
-                        index=0
-                    )
+            # Add guest button
+            if st.button("**Add Another Guest**", icon=":material/add:"):
+                add_guest()
+                st.rerun()
 
-                # Dietary requirements
-                st.text_area(
-                    "Dietary Requirements/Allergies",
-                    key=f"dietary_{i}",
-                    placeholder="Please list any allergies or dietary requirements",
-                    height=60
-                )
+        # Additional comments
+        with st.container(border=True):
+            st.markdown("**Additional Comments**")
+            comments = st.text_area(
+                "Any additional comments or special requests:",
+                key="comments",
+                height=100
+            )
 
+        # Submit button
+        if st.button("Submit RSVP", type="primary", width="content"):
+            # Store form data in session state before processing
+            st.session_state.form_data = {
+                'attending': attending,
+                'contact_name': contact_name,
+                'contact_email': contact_email,
+                'contact_phone': contact_phone,
+                'comments': comments
+            }
 
-        # Add guest button
-        if st.button("**Add Another Guest**", icon=":material/add:"):
-            add_guest()
+            # Store guest data
+            for i, _ in enumerate(st.session_state.guests):
+                st.session_state.form_data[f"guest_first_name_{i}"] = st.session_state.get(f"guest_first_name_{i}", "")
+                st.session_state.form_data[f"guest_last_name_{i}"] = st.session_state.get(f"guest_last_name_{i}", "")
+                st.session_state.form_data[f"starter_{i}"] = st.session_state.get(f"starter_{i}", "")
+                st.session_state.form_data[f"main_{i}"] = st.session_state.get(f"main_{i}", "")
+                st.session_state.form_data[f"dessert_{i}"] = st.session_state.get(f"dessert_{i}", "")
+                st.session_state.form_data[f"dietary_{i}"] = st.session_state.get(f"dietary_{i}", "")
+
+            # Set submission in progress
+            st.session_state.submission_in_progress = True
             st.rerun()
-    
-    # Additional comments
-    st.markdown("**Additional Comments**")
-    comments = st.text_area(
-        "Any additional comments or special requests:",
-        key="comments",
-        height=100
-    )
-    
-    # Submit button
-    st.markdown("---")
-    if st.button("Submit RSVP", type="primary", width="content"):
-        # Store form data in session state before processing
-        st.session_state.form_data = {
-            'attending': attending,
-            'contact_name': contact_name,
-            'contact_email': contact_email,
-            'contact_phone': contact_phone,
-            'comments': comments
-        }
-        
-        # Store guest data
-        for i, _ in enumerate(st.session_state.guests):
-            st.session_state.form_data[f"guest_first_name_{i}"] = st.session_state.get(f"guest_first_name_{i}", "")
-            st.session_state.form_data[f"guest_last_name_{i}"] = st.session_state.get(f"guest_last_name_{i}", "")
-            st.session_state.form_data[f"starter_{i}"] = st.session_state.get(f"starter_{i}", "")
-            st.session_state.form_data[f"main_{i}"] = st.session_state.get(f"main_{i}", "")
-            st.session_state.form_data[f"dessert_{i}"] = st.session_state.get(f"dessert_{i}", "")
-            st.session_state.form_data[f"dietary_{i}"] = st.session_state.get(f"dietary_{i}", "")
-        
-        # Set submission in progress
-        st.session_state.submission_in_progress = True
-        st.rerun()
 
 def main():
     """Main application entry point"""
