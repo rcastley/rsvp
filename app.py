@@ -288,7 +288,7 @@ def rsvp_form_page():
     
     if attending == "Yes, I/we will attend":
         st.markdown("**Guest Details & Menu Choices**")
-        st.write("Please provide details for each guest attending:")
+        st.write("Please provide details for each guest attending (view the full menu on the [Event Info](/event_info_page) page):")
         
         # Display guests
         for i, _ in enumerate(st.session_state.guests):
