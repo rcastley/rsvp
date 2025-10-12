@@ -201,7 +201,7 @@ def rsvp_form_page():
         with col1:
             st.header(f"{st.secrets['wedding']['wedding_couple']} Wedding RSVP")
             st.write(st.secrets["welcome"]["message"])
-            st.write("Please provide below the details for each guest attending (view the full menu on the [**Event Information**](/event_info_page) page):")
+            st.write("Please provide below the details for each guest attending (view the full menu on the [**Event Information**](/event_info_page) page).")
             # Check deadline status and display countdown/warning
             deadline = get_deadline_datetime()
             if deadline:
